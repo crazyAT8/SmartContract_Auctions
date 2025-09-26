@@ -1,0 +1,155 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AuctionType {
+  DUTCH
+  ENGLISH
+  SEALED_BID
+  HOLD_TO_COMPETE
+  PLAYABLE
+  RANDOM_SELECTION
+  ORDER_BOOK
+}
+
+enum AuctionStatus {
+  DRAFT
+  ACTIVE
+  ENDED
+  CANCELLED
+}
+
+enum BidStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+model User {
+  id          String   @id @default(cuid())
+  address     String   @unique
+  username    String?
+  email       String?  @unique
+  avatar      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  createdAuctions Auction[] @relation("AuctionCreator")
+  bids           Bid[]
+  notifications  Notification[]
+
+  @@map("users")
+}
+
+model Auction {
+  id              String        @id @default(cuid())
+  title           String
+  description     String?
+  imageUrl        String?
+  type            AuctionType
+  status          AuctionStatus @default(DRAFT)
+  contractAddress String?       @unique
+  creatorId       String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  startTime       DateTime?
+  endTime         DateTime?
+
+  // Auction-specific parameters
+  startPrice      String?       // For Dutch auctions
+  reservePrice    String?       // For English/Dutch auctions
+  duration        Int?          // Duration in seconds
+  priceDropInterval Int?        // For Dutch auctions
+  priceDropAmount String?       // For Dutch auctions
+  minHoldAmount   String?       // For Hold-to-Compete auctions
+  tokenAddress    String?       // For Hold-to-Compete auctions
+  biddingTime     Int?          // For English/Sealed Bid auctions
+  revealTime      Int?          // For Sealed Bid auctions
+
+  // Current auction state
+  currentPrice    String?
+  highestBid      String?
+  highestBidder   String?
+  winner          String?
+  totalBids       Int          @default(0)
+  totalVolume     String        @default("0")
+
+  // Relations
+  creator         User          @relation("AuctionCreator", fields: [creatorId], references: [id])
+  bids            Bid[]
+
+  @@map("auctions")
+}
+
+model Bid {
+  id          String    @id @default(cuid())
+  auctionId   String
+  bidderId    String
+  amount      String
+  status      BidStatus @default(PENDING)
+  isHighest   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // For sealed bid auctions
+  blindedBid  String?   // Hashed bid
+  secret      String?   // Secret for revealing
+  revealed    Boolean   @default(false)
+
+  // For order book auctions
+  orderType   String?   // "BUY" or "SELL"
+  price       String?   // Price per unit
+  quantity    String?   // Quantity
+
+  // Relations
+  auction     Auction   @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  bidder      User      @relation(fields: [bidderId], references: [id])
+
+  @@map("bids")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   // "BID_PLACED", "AUCTION_ENDED", "BID_OUTBID", etc.
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model AuctionEvent {
+  id          String   @id @default(cuid())
+  auctionId   String
+  eventType   String   // "AUCTION_STARTED", "BID_PLACED", "AUCTION_ENDED", etc.
+  data        Json     // Event-specific data
+  blockNumber Int?
+  transactionHash String?
+  createdAt   DateTime @default(now())
+
+  @@map("auction_events")
+}
+
+model SystemConfig {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+  description String?
+
+  @@map("system_config")
+}
