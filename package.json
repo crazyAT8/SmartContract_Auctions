@@ -1,6 +1,7 @@
 {
   "name": "auction-dapp",
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "description": "Decentralized Auction Platform - Full-stack dApp for smart contract auctions",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,6 +12,9 @@
     "deploy": "hardhat run scripts/deploy.ts --network localhost",
     "test": "hardhat test"
   },
+  "keywords": ["ethereum", "auctions", "dapp", "web3", "solidity", "nextjs", "typescript"],
+  "author": "Your Name",
+  "license": "MIT",
   "dependencies": {
     "next": "14.0.0",
     "react": "^18.2.0",
