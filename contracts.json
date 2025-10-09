@@ -1,0 +1,70 @@
+{
+  "compiler": {
+    "version": "0.8.20"
+  },
+  "language": "Solidity",
+  "output": {
+    "abi": true,
+    "devdoc": true,
+    "userdoc": true,
+    "metadata": true,
+    "bytecode": true,
+    "bytecodeHash": "none",
+    "linkReferences": {},
+    "object": ""
+  },
+  "settings": {
+    "remappings": [],
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "evmVersion": "paris",
+    "viaIR": false,
+    "debug": {
+      "revertStrings": "default"
+    }
+  },
+  "sources": {
+    "contracts/EnglishAuction.sol": {
+      "urls": [
+        "bzz-raw://0x..."
+      ]
+    },
+    "contracts/DutchAuction.sol": {
+      "urls": [
+        "bzz-raw://0x..."
+      ]
+    },
+    "contracts/SealedBidAuction.sol": {
+      "urls": [
+        "bzz-raw://0x..."
+      ]
+    },
+    "contracts/HoldToCompeteAuction.sol": {
+      "urls": [
+        "bzz-raw://0x..."
+      ]
+    },
+    "contracts/OrderBookAuction.sol": {
+      "urls": [
+        "bzz-raw://0x..."
+      ]
+    },
+    "contracts/PlayableAuction.sol": {
+      "urls": [
+        "bzz-raw://0x..."
+      ]
+    },
+    "contracts/RandomSelectionAuction.sol": {
+      "urls": [
+        "bzz-raw://0x..."
+      ]
+    },
+    "contracts/MockERC20.sol": {
+      "urls": [
+        "bzz-raw://0x..."
+      ]
+    }
+  }
+}
