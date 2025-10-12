@@ -14,24 +14,31 @@ A comprehensive auction platform built on Ethereum featuring multiple auction me
 ## 🏗️ Auction Types
 
 ### 1. English Auction 📈
+
 Traditional ascending bid auction where participants bid against each other.
 
 ### 2. Dutch Auction 📉
+
 Descending price auction where the price drops until someone buys.
 
 ### 3. Sealed Bid Auction 🔒
+
 Two-phase confidential bidding with blind submission and reveal phases.
 
 ### 4. Hold to Compete 🔐
+
 Requires token locking before bidding to prevent frivolous bids.
 
 ### 5. Order Book Auction 📊
+
 Matching engine for buy and sell orders with clearing price determination.
 
 ### 6. Playable Auction 🎮
+
 Gamified auction with price drops and partial refunds for engagement.
 
 ### 7. Random Selection 🎲
+
 Lottery-based winner selection weighted by bid amount for fair distribution.
 
 ## 🛠️ Tech Stack
@@ -45,17 +52,20 @@ Lottery-based winner selection weighted by bid amount for fair distribution.
 ## 📦 Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd auction-dapp
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
+
    ```bash
    cp .env.example .env.local
    ```
@@ -67,12 +77,14 @@ Lottery-based winner selection weighted by bid amount for fair distribution.
    ```
 
 4. **Compile and deploy contracts**
+
    ```bash
    npm run compile
    npm run deploy
    ```
 
 5. **Start the development server**
+
    ```bash
    npm run dev
    ```
@@ -80,12 +92,14 @@ Lottery-based winner selection weighted by bid amount for fair distribution.
 ## 🚀 Deployment
 
 ### Local Development
+
 1. Start Hardhat node: `npx hardhat node`
 2. Deploy contracts: `npm run deploy`
 3. Update contract addresses in `app/page.tsx`
 4. Start the app: `npm run dev`
 
 ### Production
+
 1. Build the app: `npm run build`
 2. Deploy contracts to your target network
 3. Update contract addresses and network configuration
@@ -119,6 +133,7 @@ auction-dapp/
 ## 🔧 Configuration
 
 ### Contract Addresses
+
 Update the `MOCK_CONTRACTS` object in `app/page.tsx` with your deployed contract addresses:
 
 ```typescript
@@ -130,6 +145,7 @@ const MOCK_CONTRACTS = {
 ```
 
 ### Network Configuration
+
 Modify `lib/wagmi.ts` to add your target networks:
 
 ```typescript
