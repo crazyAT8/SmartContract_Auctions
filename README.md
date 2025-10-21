@@ -71,6 +71,7 @@ Lottery-based winner selection weighted by bid amount for fair distribution.
    ```
    
    Fill in your environment variables:
+   
    ```env
    NEXT_PUBLIC_ALCHEMY_ID=your_alchemy_api_key
    NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_wallet_connect_project_id

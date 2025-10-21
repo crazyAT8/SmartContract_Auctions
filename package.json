@@ -12,35 +12,43 @@
     "deploy": "hardhat run scripts/deploy.ts --network localhost",
     "test": "hardhat test"
   },
-  "keywords": ["ethereum", "auctions", "dapp", "web3", "solidity", "nextjs", "typescript"],
+  "keywords": [
+    "ethereum",
+    "auctions",
+    "dapp",
+    "web3",
+    "solidity",
+    "nextjs",
+    "typescript"
+  ],
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
+    "@rainbow-me/rainbowkit": "^1.3.0",
+    "@tanstack/react-query": "^4.35.0",
+    "clsx": "^2.0.0",
+    "ethers": "^6.8.0",
+    "framer-motion": "^10.16.0",
+    "lucide-react": "^0.292.0",
     "next": "14.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "ethers": "^6.8.0",
-    "wagmi": "^1.4.0",
-    "@rainbow-me/rainbowkit": "^1.3.0",
-    "@tanstack/react-query": "^4.35.0",
+    "tailwind-merge": "^2.0.0",
     "viem": "^1.19.0",
-    "framer-motion": "^10.16.0",
-    "lucide-react": "^0.292.0",
-    "clsx": "^2.0.0",
-    "tailwind-merge": "^2.0.0"
+    "wagmi": "^1.4.0"
   },
   "devDependencies": {
-    "typescript": "^5.2.0",
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@openzeppelin/contracts": "^5.0.0",
     "@types/node": "^20.8.0",
-    "@types/react": "^18.2.0",
+    "@types/react": "19.2.2",
     "@types/react-dom": "^18.2.0",
     "autoprefixer": "^10.4.0",
-    "postcss": "^8.4.0",
-    "tailwindcss": "^3.3.0",
     "eslint": "^8.52.0",
     "eslint-config-next": "14.0.0",
-    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
     "hardhat": "^2.19.0",
-    "@openzeppelin/contracts": "^5.0.0"
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5.2.0"
   }
 }
