@@ -7,21 +7,42 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
 // Get JWT token by signing a message with wallet
 export async function getAuthToken(signer: ethers.JsonRpcSigner, address: string): Promise<string | null> {
   try {
-    // For now, we'll use a simple approach - in production, you'd want to:
-    // 1. Request a nonce from the backend
-    // 2. Sign a message containing the nonce
-    // 3. Send the signature to the backend to get a JWT token
-    
-    // Placeholder: In a real implementation, you'd call an auth endpoint
-    // For now, we'll return null and let the backend handle it differently
-    // or implement a proper auth flow
-    
-    const message = `Sign in to Auction dApp\n\nAddress: ${address}\nTimestamp: ${Date.now()}`
+    // Step 1: Request a nonce from the backend
+    const nonceResponse = await fetch(`${API_BASE_URL}/auth/nonce`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ address }),
+    })
+
+    if (!nonceResponse.ok) {
+      const error = await nonceResponse.json()
+      throw new Error(error.error || 'Failed to get nonce')
+    }
+
+    const { nonce, message } = await nonceResponse.json()
+
+    // Step 2: Sign the message containing the nonce
     const signature = await signer.signMessage(message)
-    
-    // In production, send signature to backend /api/auth/login endpoint
-    // For now, we'll store it in localStorage as a temporary solution
-    const token = btoa(JSON.stringify({ address, signature, timestamp: Date.now() }))
+
+    // Step 3: Send the signature to the backend to get a JWT token
+    const loginResponse = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ address, signature, nonce }),
+    })
+
+    if (!loginResponse.ok) {
+      const error = await loginResponse.json()
+      throw new Error(error.error || 'Failed to authenticate')
+    }
+
+    const { token } = await loginResponse.json()
+
+    // Store token in localStorage
     localStorage.setItem('auth_token', token)
     
     return token

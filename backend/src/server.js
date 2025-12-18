@@ -11,6 +11,7 @@ require('dotenv').config();
 const auctionRoutes = require('./routes/auctions');
 const userRoutes = require('./routes/users');
 const web3Routes = require('./routes/web3');
+const authRoutes = require('./routes/auth');
 const { connectDatabase } = require('./config/database');
 const { connectRedis } = require('./config/redis');
 const { errorHandler } = require('./middleware/errorHandler');
@@ -57,6 +58,7 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/auctions', auctionRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/web3', web3Routes);
