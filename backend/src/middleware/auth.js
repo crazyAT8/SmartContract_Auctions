@@ -2,8 +2,20 @@ const jwt = require('jsonwebtoken');
 const { prisma } = require('../config/database');
 const { logger } = require('../utils/logger');
 
+function getJwtSecret() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    logger.warn('JWT_SECRET is not set; authentication will fail');
+  }
+  return secret;
+}
+
 const authenticateUser = async (req, res, next) => {
   try {
+    const secret = getJwtSecret();
+    if (!secret) {
+      return res.status(503).json({ error: 'Authentication not configured' });
+    }
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -16,7 +28,7 @@ const authenticateUser = async (req, res, next) => {
       return res.status(401).json({ error: 'No token provided' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, secret);
     
     // Find or create user
     let user = await prisma.user.findUnique({
@@ -53,6 +65,11 @@ const authenticateUser = async (req, res, next) => {
 
 const optionalAuth = async (req, res, next) => {
   try {
+    const secret = getJwtSecret();
+    if (!secret) {
+      req.user = null;
+      return next();
+    }
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -67,7 +84,7 @@ const optionalAuth = async (req, res, next) => {
       return next();
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, secret);
     
     const user = await prisma.user.findUnique({
       where: { address: decoded.address }

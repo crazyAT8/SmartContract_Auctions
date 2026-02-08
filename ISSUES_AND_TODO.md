@@ -43,7 +43,7 @@
 
 ### Phase 1 – Unblock & fix critical
 
-- [ ] **Fix auth middleware** – Add missing `{` in `backend/src/middleware/auth.js:54` so backend starts.
+- [x] **Fix auth middleware** – Add missing `{` in `backend/src/middleware/auth.js:54` so backend starts.
 - [ ] **Add Bid.transactionHash** – Update `backend/prisma/schema.prisma`, run migration, persist in bid creation.
 - [ ] **Implement auth endpoints** – Add `/api/auth/nonce` and `/api/auth/login` (wallet sign → JWT); wire frontend in `frontend/src/utils/api.ts`.
 - [ ] **Export and wire contract ABIs** – Export from Hardhat artifacts to `contracts/abis/`, copy to frontend and backend, use in contract calls.
