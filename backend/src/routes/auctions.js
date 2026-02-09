@@ -4,6 +4,7 @@ const { validateAuction, validateBid } = require('../middleware/validation');
 const { authenticateUser } = require('../middleware/auth');
 const { logger } = require('../utils/logger');
 const { getRedis } = require('../config/redis');
+const { deployAuctionContract, isDeploymentConfigured } = require('../services/contractDeployment');
 
 const router = express.Router();
 
@@ -187,24 +188,37 @@ router.post('/:id/start', authenticateUser, async (req, res) => {
       return res.status(400).json({ error: 'Auction is not in draft status' });
     }
 
-    // TODO: Deploy contract based on auction type
-    // This would integrate with the Web3 service
-    const contractAddress = '0x...'; // Placeholder
+    if (!isDeploymentConfigured()) {
+      return res.status(503).json({
+        error: 'Contract deployment not configured',
+        detail: 'Set ETHEREUM_RPC_URL and PRIVATE_KEY in backend .env, and run npm run compile:artifacts in contracts/'
+      });
+    }
+
+    const { contractAddress, tokenAddress: deployedTokenAddress } = await deployAuctionContract(auction);
+
+    const updateData = {
+      status: 'ACTIVE',
+      contractAddress,
+      startTime: new Date()
+    };
+    if (deployedTokenAddress) {
+      updateData.tokenAddress = deployedTokenAddress;
+    }
 
     const updatedAuction = await prisma.auction.update({
       where: { id: req.params.id },
-      data: {
-        status: 'ACTIVE',
-        contractAddress,
-        startTime: new Date()
-      }
+      data: updateData
     });
 
     logger.info(`Auction started: ${auction.id} with contract ${contractAddress}`);
     res.json(updatedAuction);
   } catch (error) {
     logger.error('Error starting auction:', error);
-    res.status(500).json({ error: 'Failed to start auction' });
+    res.status(500).json({
+      error: 'Failed to start auction',
+      detail: error.message || 'Contract deployment failed'
+    });
   }
 });
 
