@@ -1,5 +1,41 @@
 const Joi = require('joi');
 
+// Auth: nonce request
+const authNonceSchema = Joi.object({
+  address: Joi.string().pattern(/^0x[a-fA-F0-9]{40}$/).required()
+});
+
+// Auth: login request (wallet signature)
+const authLoginSchema = Joi.object({
+  address: Joi.string().pattern(/^0x[a-fA-F0-9]{40}$/).required(),
+  signature: Joi.string().min(1).required(),
+  nonce: Joi.string().min(1).required()
+});
+
+const validateAuthNonce = (req, res, next) => {
+  const { error, value } = authNonceSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({
+      error: 'Validation error',
+      details: error.details.map(detail => detail.message)
+    });
+  }
+  req.body = value;
+  next();
+};
+
+const validateAuthLogin = (req, res, next) => {
+  const { error, value } = authLoginSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({
+      error: 'Validation error',
+      details: error.details.map(detail => detail.message)
+    });
+  }
+  req.body = value;
+  next();
+};
+
 const auctionSchema = Joi.object({
   title: Joi.string().min(1).max(200).required(),
   description: Joi.string().max(1000).optional(),
@@ -63,6 +99,8 @@ const validateBid = (req, res, next) => {
 };
 
 module.exports = {
+  validateAuthNonce,
+  validateAuthLogin,
   validateAuction,
   validateBid
 };

@@ -3,6 +3,7 @@ const { ethers } = require('ethers');
 const { prisma } = require('../config/database');
 const { authenticateUser } = require('../middleware/auth');
 const { logger } = require('../utils/logger');
+const { getAuctionABI } = require('../contracts');
 
 const router = express.Router();
 
@@ -122,18 +123,11 @@ router.post('/auction/:contractAddress/bid', authenticateUser, async (req, res) 
   }
 });
 
-// Helper functions for different auction types
+// Helper functions for different auction types (ABIs from backend/src/contracts/abis)
 async function getDutchAuctionState(contractAddress) {
-  const contract = new ethers.Contract(contractAddress, [
-    'function getCurrentPrice() view returns (uint256)',
-    'function ended() view returns (bool)',
-    'function winner() view returns (address)',
-    'function seller() view returns (address)',
-    'function startPrice() view returns (uint256)',
-    'function reservePrice() view returns (uint256)',
-    'function startTime() view returns (uint256)',
-    'function duration() view returns (uint256)'
-  ], provider);
+  const abi = getAuctionABI('DUTCH');
+  if (!abi) throw new Error('DutchAuction ABI not found. Run contracts/scripts/export-abis.js.');
+  const contract = new ethers.Contract(contractAddress, abi, provider);
 
   const [currentPrice, ended, winner, seller, startPrice, reservePrice, startTime, duration] = await Promise.all([
     contract.getCurrentPrice(),
@@ -159,13 +153,9 @@ async function getDutchAuctionState(contractAddress) {
 }
 
 async function getEnglishAuctionState(contractAddress) {
-  const contract = new ethers.Contract(contractAddress, [
-    'function auctionEndTime() view returns (uint256)',
-    'function highestBid() view returns (uint256)',
-    'function highestBidder() view returns (address)',
-    'function ended() view returns (bool)',
-    'function seller() view returns (address)'
-  ], provider);
+  const abi = getAuctionABI('ENGLISH');
+  if (!abi) throw new Error('EnglishAuction ABI not found. Run contracts/scripts/export-abis.js.');
+  const contract = new ethers.Contract(contractAddress, abi, provider);
 
   const [auctionEndTime, highestBid, highestBidder, ended, seller] = await Promise.all([
     contract.auctionEndTime(),
@@ -185,14 +175,9 @@ async function getEnglishAuctionState(contractAddress) {
 }
 
 async function getSealedBidAuctionState(contractAddress) {
-  const contract = new ethers.Contract(contractAddress, [
-    'function biddingEnd() view returns (uint256)',
-    'function revealEnd() view returns (uint256)',
-    'function auctionEnded() view returns (bool)',
-    'function highestBidder() view returns (address)',
-    'function highestBid() view returns (uint256)',
-    'function auctioneer() view returns (address)'
-  ], provider);
+  const abi = getAuctionABI('SEALED_BID');
+  if (!abi) throw new Error('SealedBidAuction ABI not found. Run contracts/scripts/export-abis.js.');
+  const contract = new ethers.Contract(contractAddress, abi, provider);
 
   const [biddingEnd, revealEnd, auctionEnded, highestBidder, highestBid, auctioneer] = await Promise.all([
     contract.biddingEnd(),
@@ -214,14 +199,9 @@ async function getSealedBidAuctionState(contractAddress) {
 }
 
 async function getHoldToCompeteAuctionState(contractAddress) {
-  const contract = new ethers.Contract(contractAddress, [
-    'function auctionEndTime() view returns (uint256)',
-    'function highestBidder() view returns (address)',
-    'function highestBid() view returns (uint256)',
-    'function minHoldAmount() view returns (uint256)',
-    'function biddingToken() view returns (address)',
-    'function seller() view returns (address)'
-  ], provider);
+  const abi = getAuctionABI('HOLD_TO_COMPETE');
+  if (!abi) throw new Error('HoldToCompeteAuction ABI not found. Run contracts/scripts/export-abis.js.');
+  const contract = new ethers.Contract(contractAddress, abi, provider);
 
   const [auctionEndTime, highestBidder, highestBid, minHoldAmount, biddingToken, seller] = await Promise.all([
     contract.auctionEndTime(),
@@ -243,14 +223,9 @@ async function getHoldToCompeteAuctionState(contractAddress) {
 }
 
 async function getPlayableAuctionState(contractAddress) {
-  const contract = new ethers.Contract(contractAddress, [
-    'function getCurrentPrice() view returns (uint256)',
-    'function highestBidder() view returns (address)',
-    'function highestBid() view returns (uint256)',
-    'function auctionEnded() view returns (bool)',
-    'function startTime() view returns (uint256)',
-    'function endTime() view returns (uint256)'
-  ], provider);
+  const abi = getAuctionABI('PLAYABLE');
+  if (!abi) throw new Error('PlayableAuction ABI not found. Run contracts/scripts/export-abis.js.');
+  const contract = new ethers.Contract(contractAddress, abi, provider);
 
   const [currentPrice, highestBidder, highestBid, auctionEnded, startTime, endTime] = await Promise.all([
     contract.getCurrentPrice(),
@@ -272,11 +247,9 @@ async function getPlayableAuctionState(contractAddress) {
 }
 
 async function getRandomSelectionAuctionState(contractAddress) {
-  const contract = new ethers.Contract(contractAddress, [
-    'function auctionEndTime() view returns (uint256)',
-    'function auctionEnded() view returns (bool)',
-    'function owner() view returns (address)'
-  ], provider);
+  const abi = getAuctionABI('RANDOM_SELECTION');
+  if (!abi) throw new Error('RandomSelectionAuction ABI not found. Run contracts/scripts/export-abis.js.');
+  const contract = new ethers.Contract(contractAddress, abi, provider);
 
   const [auctionEndTime, auctionEnded, owner] = await Promise.all([
     contract.auctionEndTime(),
@@ -292,12 +265,9 @@ async function getRandomSelectionAuctionState(contractAddress) {
 }
 
 async function getOrderBookAuctionState(contractAddress) {
-  const contract = new ethers.Contract(contractAddress, [
-    'function auctionEndTime() view returns (uint256)',
-    'function auctionEnded() view returns (bool)',
-    'function clearingPrice() view returns (uint256)',
-    'function admin() view returns (address)'
-  ], provider);
+  const abi = getAuctionABI('ORDER_BOOK');
+  if (!abi) throw new Error('OrderBookAuction ABI not found. Run contracts/scripts/export-abis.js.');
+  const contract = new ethers.Contract(contractAddress, abi, provider);
 
   const [auctionEndTime, auctionEnded, clearingPrice, admin] = await Promise.all([
     contract.auctionEndTime(),

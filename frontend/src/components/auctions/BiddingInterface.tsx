@@ -7,6 +7,7 @@ import { formatEther } from '@/utils/formatting'
 import { CurrencyDollarIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { ethers } from 'ethers'
+import { getAuctionABI } from '@/contracts/contracts'
 
 interface BiddingInterfaceProps {
   auction: {
@@ -121,30 +122,24 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
     if (!signer) throw new Error('Wallet not connected')
 
     const value = ethers.parseEther(amount)
+    const abi = getAuctionABI(type as 'DUTCH' | 'ENGLISH')
 
-    // Basic contract ABI for common functions
-    let contract: ethers.Contract
+    if (!abi) {
+      // No ABI wired for this type; fallback to API
+      return placeBidViaAPI(amount)
+    }
+
+    const contract = new ethers.Contract(contractAddress, abi, signer)
     let tx: ethers.ContractTransactionResponse
 
     switch (type) {
       case 'DUTCH':
-        // Dutch auction - buy() function
-        contract = new ethers.Contract(contractAddress, [
-          'function buy() external payable'
-        ], signer)
         tx = await contract.buy({ value })
         break
-
       case 'ENGLISH':
-        // English auction - bid() function
-        contract = new ethers.Contract(contractAddress, [
-          'function bid() external payable'
-        ], signer)
         tx = await contract.bid({ value })
         break
-
       default:
-        // For other types, use API fallback
         return placeBidViaAPI(amount)
     }
 

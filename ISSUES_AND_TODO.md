@@ -12,7 +12,7 @@
 | 4 | **Bid validation not implemented** | `backend/src/routes/auctions.js:226` | Bids not validated against contract state. |
 | 5 | **Bid model missing `transactionHash`** | `backend/prisma/schema.prisma` | Frontend sends it but it's not stored. |
 | 6 | **Auth middleware syntax error** | `backend/src/middleware/auth.js:54` | Missing `{` in `optionalAuth`; backend won't start. |
-| 7 | **Contract ABIs not used** | `frontend/src/`, `backend/src/` | Hardhat compiles ABIs but they're not imported/used. |
+| 7 | ~~**Contract ABIs not used**~~ | `frontend/src/contracts/`, `backend/src/contracts/` | Resolved: ABIs exported and wired in contract calls. |
 | 8 | **Frontend contract integration partial** | `frontend/.../BiddingInterface.tsx:120-158` | Only Dutch & English use contracts; others API-only. |
 
 ### Medium priority
@@ -44,9 +44,9 @@
 ### Phase 1 – Unblock & fix critical
 
 - [x] **Fix auth middleware** – Add missing `{` in `backend/src/middleware/auth.js:54` so backend starts.
-- [ ] **Add Bid.transactionHash** – Update `backend/prisma/schema.prisma`, run migration, persist in bid creation.
-- [ ] **Implement auth endpoints** – Add `/api/auth/nonce` and `/api/auth/login` (wallet sign → JWT); wire frontend in `frontend/src/utils/api.ts`.
-- [ ] **Export and wire contract ABIs** – Export from Hardhat artifacts to `contracts/abis/`, copy to frontend and backend, use in contract calls.
+- [x] **Add Bid.transactionHash** – Update `backend/prisma/schema.prisma`, run migration, persist in bid creation.
+- [x] **Implement auth endpoints** – Add `/api/auth/nonce` and `/api/auth/login` (wallet sign → JWT); wire frontend in `frontend/src/utils/api.ts`.
+- [x] **Export and wire contract ABIs** – Export from Hardhat artifacts to `contracts/abis/`, copy to frontend and backend, use in contract calls.
 - [ ] **Implement contract deployment service** – Backend service to deploy auction contracts on “start auction”; replace `'0x...'` in `backend/src/routes/auctions.js:190`.
 - [ ] **Implement backend wallet** – Wallet from env in `backend`; implement all `place*Bid` in `backend/src/routes/web3.js`.
 - [ ] **Complete frontend contract integration** – In `BiddingInterface.tsx`, add contract interaction for all 7 auction types (not just Dutch/English).
