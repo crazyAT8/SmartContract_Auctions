@@ -48,7 +48,7 @@
 - [x] **Implement auth endpoints** – Add `/api/auth/nonce` and `/api/auth/login` (wallet sign → JWT); wire frontend in `frontend/src/utils/api.ts`.
 - [x] **Export and wire contract ABIs** – Export from Hardhat artifacts to `contracts/abis/`, copy to frontend and backend, use in contract calls.
 - [x] **Implement contract deployment service** – Backend service to deploy auction contracts on “start auction”; replace `'0x...'` in `backend/src/routes/auctions.js:190`.
-- [ ] **Implement backend wallet** – Wallet from env in `backend`; implement all `place*Bid` in `backend/src/routes/web3.js`.
+- [x] **Implement backend wallet** – Wallet from env in `backend`; implement all `place*Bid` in `backend/src/routes/web3.js`.
 - [ ] **Complete frontend contract integration** – In `BiddingInterface.tsx`, add contract interaction for all 7 auction types (not just Dutch/English).
 - [ ] **Add bid validation** – Validate bids against contract state in `backend/src/routes/auctions.js:226`.
 

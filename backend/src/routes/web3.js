@@ -1,14 +1,33 @@
 const express = require('express');
 const { ethers } = require('ethers');
-const { prisma } = require('../config/database');
 const { authenticateUser } = require('../middleware/auth');
 const { logger } = require('../utils/logger');
 const { getAuctionABI } = require('../contracts');
+const { getWallet, getProvider, isDeploymentConfigured } = require('../services/contractDeployment');
 
 const router = express.Router();
 
-// Initialize provider
-const provider = new ethers.JsonRpcProvider(process.env.ETHEREUM_RPC_URL || 'http://localhost:8545');
+// Provider for read-only contract state (shared with deployment service)
+const provider = getProvider();
+
+/** Parse amount to wei (accepts ETH string or wei string). */
+function toWei(value) {
+  if (value == null || value === '') throw new Error('Amount is required');
+  const s = String(value).trim();
+  if (s.includes('.') || /^\d+$/.test(s) && s.length <= 18) return ethers.parseEther(s);
+  return BigInt(s);
+}
+
+/** Get contract instance connected to backend wallet (for signing txs). */
+function getSignedContract(contractAddress, type) {
+  if (!isDeploymentConfigured()) {
+    throw new Error('Backend wallet not configured: set PRIVATE_KEY and ETHEREUM_RPC_URL in .env');
+  }
+  const abi = getAuctionABI(type);
+  if (!abi) throw new Error(`ABI not found for auction type: ${type}`);
+  const wallet = getWallet();
+  return new ethers.Contract(contractAddress, abi, wallet);
+}
 
 // Get contract addresses
 router.get('/contracts', async (req, res) => {
@@ -119,7 +138,15 @@ router.post('/auction/:contractAddress/bid', authenticateUser, async (req, res) 
     res.json({ transactionHash: txHash });
   } catch (error) {
     logger.error('Error placing bid:', error);
-    res.status(500).json({ error: 'Failed to place bid' });
+    const msg = error.message || 'Failed to place bid';
+    const status =
+      msg.includes('not configured') ||
+      msg.includes('is required') ||
+      msg.includes('must be') ||
+      msg.includes('Invalid')
+        ? 400
+        : 500;
+    res.status(status).json({ error: msg });
   }
 });
 
@@ -284,40 +311,77 @@ async function getOrderBookAuctionState(contractAddress) {
   };
 }
 
-// Place bid functions (simplified - would need proper wallet integration)
+// Place bid functions (backend wallet signs transactions)
 async function placeDutchAuctionBid(contractAddress, amount) {
-  // This would require wallet integration
-  throw new Error('Wallet integration not implemented');
+  const contract = getSignedContract(contractAddress, 'DUTCH');
+  const valueWei = toWei(amount);
+  const tx = await contract.buy({ value: valueWei });
+  const receipt = await tx.wait();
+  return receipt.hash;
 }
 
 async function placeEnglishAuctionBid(contractAddress, amount) {
-  // This would require wallet integration
-  throw new Error('Wallet integration not implemented');
+  const contract = getSignedContract(contractAddress, 'ENGLISH');
+  const valueWei = toWei(amount);
+  const tx = await contract.bid({ value: valueWei });
+  const receipt = await tx.wait();
+  return receipt.hash;
 }
 
 async function placeSealedBidAuctionBid(contractAddress, bidData) {
-  // This would require wallet integration
-  throw new Error('Wallet integration not implemented');
+  const { blindedBid, deposit } = bidData || {};
+  if (!blindedBid) throw new Error('Sealed bid requires blindedBid (bytes32 hex string)');
+  const contract = getSignedContract(contractAddress, 'SEALED_BID');
+  const depositWei = deposit != null && deposit !== '' ? toWei(deposit) : 0n;
+  const tx = await contract.bid(blindedBid, { value: depositWei });
+  const receipt = await tx.wait();
+  return receipt.hash;
 }
 
 async function placeHoldToCompeteAuctionBid(contractAddress, amount) {
-  // This would require wallet integration
-  throw new Error('Wallet integration not implemented');
+  const contract = getSignedContract(contractAddress, 'HOLD_TO_COMPETE');
+  const amountWei = toWei(amount);
+  const tx = await contract.placeBid(amountWei);
+  const receipt = await tx.wait();
+  return receipt.hash;
 }
 
 async function placePlayableAuctionBid(contractAddress, amount) {
-  // This would require wallet integration
-  throw new Error('Wallet integration not implemented');
+  const contract = getSignedContract(contractAddress, 'PLAYABLE');
+  const valueWei = toWei(amount);
+  const tx = await contract.placeBid({ value: valueWei });
+  const receipt = await tx.wait();
+  return receipt.hash;
 }
 
 async function placeRandomSelectionAuctionBid(contractAddress, amount) {
-  // This would require wallet integration
-  throw new Error('Wallet integration not implemented');
+  const contract = getSignedContract(contractAddress, 'RANDOM_SELECTION');
+  const valueWei = toWei(amount);
+  const tx = await contract.placeBid({ value: valueWei });
+  const receipt = await tx.wait();
+  return receipt.hash;
 }
 
 async function placeOrderBookAuctionOrder(contractAddress, orderData) {
-  // This would require wallet integration
-  throw new Error('Wallet integration not implemented');
+  const { side, price, amount } = orderData || {};
+  if (!side || price == null || amount == null) {
+    throw new Error('OrderBook order requires side ("buy"|"sell"), price, and amount');
+  }
+  const contract = getSignedContract(contractAddress, 'ORDER_BOOK');
+  const priceWei = toWei(price);
+  const amountUnits = BigInt(String(amount).trim());
+  if (amountUnits <= 0n) throw new Error('OrderBook amount must be positive');
+  let tx;
+  if (side === 'buy') {
+    const valueWei = priceWei * amountUnits;
+    tx = await contract.placeBuyOrder(priceWei, amountUnits, { value: valueWei });
+  } else if (side === 'sell') {
+    tx = await contract.placeSellOrder(priceWei, amountUnits);
+  } else {
+    throw new Error('OrderBook side must be "buy" or "sell"');
+  }
+  const receipt = await tx.wait();
+  return receipt.hash;
 }
 
 module.exports = router;
