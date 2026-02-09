@@ -7,7 +7,7 @@ import { formatEther } from '@/utils/formatting'
 import { CurrencyDollarIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { ethers } from 'ethers'
-import { getAuctionABI } from '@/contracts/contracts'
+import { getAuctionABI, type AuctionType } from '@/contracts/contracts'
 
 interface BiddingInterfaceProps {
   auction: {
@@ -26,12 +26,29 @@ interface BiddingInterfaceProps {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
+const SEALED_BID_STORAGE_KEY = 'sealedBidReveal'
+
+function storeSealedBidForReveal(auctionId: string, account: string, valueWei: string, secret: string) {
+  try {
+    const key = `${SEALED_BID_STORAGE_KEY}_${auctionId}_${account}`
+    const data = JSON.stringify({ valueWei, secret })
+    sessionStorage.setItem(key, data)
+  } catch {
+    // ignore
+  }
+}
+
 export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInterfaceProps) {
   const { isConnected, account, signer, provider } = useWeb3()
   const { placeBid } = useSocket()
   const [bidAmount, setBidAmount] = useState('')
   const [isPlacingBid, setIsPlacingBid] = useState(false)
   const [balance, setBalance] = useState('0')
+
+  // Order book specific state
+  const [orderBookSide, setOrderBookSide] = useState<'buy' | 'sell'>('buy')
+  const [orderBookPrice, setOrderBookPrice] = useState('')
+  const [orderBookAmount, setOrderBookAmount] = useState('')
 
   useEffect(() => {
     if (account && provider) {
@@ -41,15 +58,22 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
     }
   }, [account, provider])
 
+  const isOrderBook = auction.type === 'ORDER_BOOK'
+
   const getMinBid = () => {
     if (auction.type === 'DUTCH') {
-      // For Dutch auctions, get current price
       return auction.currentPrice || auction.reservePrice || '0'
     }
-    // For English auctions, need to bid higher than current highest
-    if (auction.highestBid) {
-      const current = parseFloat(auction.highestBid)
-      return (current * 1.05).toString() // 5% increment minimum
+    if (auction.type === 'ENGLISH' || auction.type === 'PLAYABLE' || auction.type === 'HOLD_TO_COMPETE') {
+      if (auction.highestBid) {
+        const current = parseFloat(auction.highestBid)
+        return (current * 1.05).toString()
+      }
+      if (auction.type === 'PLAYABLE' && auction.currentPrice) return auction.currentPrice
+      return auction.reservePrice || auction.startPrice || '0'
+    }
+    if (auction.type === 'RANDOM_SELECTION' || auction.type === 'SEALED_BID') {
+      return auction.reservePrice || auction.startPrice || '0'
     }
     return auction.reservePrice || auction.startPrice || '0'
   }
@@ -65,6 +89,23 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
       return false
     }
 
+    if (isOrderBook) {
+      const price = parseFloat(orderBookPrice)
+      const amount = parseFloat(orderBookAmount)
+      if (!orderBookPrice || price <= 0 || !orderBookAmount || amount <= 0) {
+        toast.error('Please enter valid price and amount')
+        return false
+      }
+      if (orderBookSide === 'buy') {
+        const valueWei = ethers.parseEther(orderBookPrice) * BigInt(Math.floor(amount))
+        if (parseFloat(balance) < Number(ethers.formatEther(valueWei))) {
+          toast.error('Insufficient balance for buy order')
+          return false
+        }
+      }
+      return true
+    }
+
     if (!bidAmount || parseFloat(bidAmount) <= 0) {
       toast.error('Please enter a valid bid amount')
       return false
@@ -78,14 +119,14 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
         toast.error(`Bid must be at least ${formatEther(minBid.toString())} ETH (current price)`)
         return false
       }
-    } else {
+    } else if (auction.type !== 'SEALED_BID' && auction.type !== 'RANDOM_SELECTION') {
       if (bid <= minBid) {
         toast.error(`Bid must be higher than ${formatEther(minBid.toString())} ETH`)
         return false
       }
     }
 
-    if (parseFloat(balance) < bid) {
+    if (parseFloat(balance) < bid && (auction.type !== 'HOLD_TO_COMPETE' || !auction.contractAddress)) {
       toast.error('Insufficient balance')
       return false
     }
@@ -99,57 +140,103 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
     setIsPlacingBid(true)
 
     try {
-      // If contract address exists, interact with smart contract
       if (auction.contractAddress && signer) {
-        await placeBidOnContract(auction.contractAddress, auction.type, bidAmount)
+        await placeBidOnContract(auction.contractAddress, auction.type as AuctionType)
       } else {
-        // Fallback to API-only bid (for testing)
+        if (isOrderBook) {
+          toast.error('Order book requires a deployed contract')
+          setIsPlacingBid(false)
+          return
+        }
         await placeBidViaAPI(bidAmount)
       }
 
       toast.success('Bid placed successfully!')
       setBidAmount('')
+      setOrderBookPrice('')
+      setOrderBookAmount('')
       onBidPlaced()
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Failed to place bid'
       console.error('Error placing bid:', error)
-      toast.error(error.message || 'Failed to place bid')
+      toast.error(msg)
     } finally {
       setIsPlacingBid(false)
     }
   }
 
-  const placeBidOnContract = async (contractAddress: string, type: string, amount: string) => {
+  const placeBidOnContract = async (contractAddress: string, type: AuctionType) => {
     if (!signer) throw new Error('Wallet not connected')
 
-    const value = ethers.parseEther(amount)
-    const abi = getAuctionABI(type as 'DUTCH' | 'ENGLISH')
-
+    const abi = getAuctionABI(type)
     if (!abi) {
-      // No ABI wired for this type; fallback to API
-      return placeBidViaAPI(amount)
+      return placeBidViaAPI(bidAmount)
     }
 
     const contract = new ethers.Contract(contractAddress, abi, signer)
+
     let tx: ethers.ContractTransactionResponse
 
     switch (type) {
-      case 'DUTCH':
+      case 'DUTCH': {
+        const value = ethers.parseEther(bidAmount)
         tx = await contract.buy({ value })
         break
-      case 'ENGLISH':
+      }
+      case 'ENGLISH': {
+        const value = ethers.parseEther(bidAmount)
         tx = await contract.bid({ value })
         break
+      }
+      case 'SEALED_BID': {
+        const valueWei = ethers.parseEther(bidAmount)
+        const secret = ethers.hexlify(ethers.randomBytes(32))
+        // Match Solidity: keccak256(abi.encodePacked(_value, _secret))
+        const packed = ethers.concat([
+          ethers.toBeHex(valueWei, 32),
+          secret,
+        ])
+        const blindedBid = ethers.keccak256(packed)
+        tx = await contract.bid(blindedBid, { value: valueWei })
+        if (account) storeSealedBidForReveal(auction.id, account, valueWei.toString(), secret)
+        break
+      }
+      case 'HOLD_TO_COMPETE': {
+        const amountWei = ethers.parseEther(bidAmount)
+        tx = await contract.placeBid(amountWei)
+        break
+      }
+      case 'PLAYABLE':
+      case 'RANDOM_SELECTION': {
+        const value = ethers.parseEther(bidAmount)
+        tx = await contract.placeBid({ value })
+        break
+      }
+      case 'ORDER_BOOK': {
+        const priceWei = ethers.parseEther(orderBookPrice)
+        const amountUnits = BigInt(Math.floor(parseFloat(orderBookAmount)))
+        if (orderBookSide === 'buy') {
+          const valueWei = priceWei * amountUnits
+          tx = await contract.placeBuyOrder(priceWei, amountUnits, { value: valueWei })
+        } else {
+          tx = await contract.placeSellOrder(priceWei, amountUnits)
+        }
+        break
+      }
       default:
-        return placeBidViaAPI(amount)
+        return placeBidViaAPI(bidAmount)
     }
 
-    // Wait for transaction
     toast.loading('Waiting for transaction confirmation...', { id: 'tx-pending' })
     const receipt = await tx.wait()
     toast.success('Transaction confirmed!', { id: 'tx-pending' })
 
-    // Also record bid in backend
-    await placeBidViaAPI(amount, receipt.hash)
+    const amountForApi = isOrderBook
+      ? (orderBookSide === 'buy'
+          ? ethers.formatEther(ethers.parseEther(orderBookPrice) * BigInt(Math.floor(parseFloat(orderBookAmount))))
+          : '0')
+      : bidAmount
+    await placeBidViaAPI(amountForApi, receipt.hash)
   }
 
   const placeBidViaAPI = async (amount: string, txHash?: string) => {
@@ -169,7 +256,6 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
       throw new Error(error.error || 'Failed to place bid')
     }
 
-    // Emit socket event
     if (account) {
       placeBid({
         auctionId: auction.id,
@@ -181,6 +267,10 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
 
   const minBid = getMinBid()
   const minBidFormatted = formatEther(minBid)
+
+  const canSubmitOrderBook = orderBookPrice && parseFloat(orderBookPrice) > 0 && orderBookAmount && parseFloat(orderBookAmount) > 0
+  const canSubmitBid = bidAmount && parseFloat(bidAmount) > 0
+  const canSubmit = isOrderBook ? canSubmitOrderBook : canSubmitBid
 
   return (
     <div className="space-y-4">
@@ -201,38 +291,95 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
         </div>
       ) : (
         <>
-          <div className="space-y-2">
-            <label htmlFor="bidAmount" className="block text-sm font-medium text-gray-700">
-              Bid Amount (ETH)
-            </label>
-            <div className="relative">
-              <CurrencyDollarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                id="bidAmount"
-                type="number"
-                step="0.001"
-                min={minBid}
-                value={bidAmount}
-                onChange={(e) => setBidAmount(e.target.value)}
-                placeholder={minBidFormatted}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
+          {isOrderBook ? (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Side</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setOrderBookSide('buy')}
+                    className={`flex-1 py-2 px-3 rounded-lg border ${orderBookSide === 'buy' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-300'}`}
+                  >
+                    Buy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOrderBookSide('sell')}
+                    className={`flex-1 py-2 px-3 rounded-lg border ${orderBookSide === 'sell' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-300'}`}
+                  >
+                    Sell
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label htmlFor="obPrice" className="block text-sm font-medium text-gray-700">Price (ETH per unit)</label>
+                <input
+                  id="obPrice"
+                  type="number"
+                  step="0.0001"
+                  min="0"
+                  value={orderBookPrice}
+                  onChange={(e) => setOrderBookPrice(e.target.value)}
+                  placeholder="0.0"
+                  className="w-full mt-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label htmlFor="obAmount" className="block text-sm font-medium text-gray-700">Amount (units)</label>
+                <input
+                  id="obAmount"
+                  type="number"
+                  step="1"
+                  min="1"
+                  value={orderBookAmount}
+                  onChange={(e) => setOrderBookAmount(e.target.value)}
+                  placeholder="0"
+                  className="w-full mt-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+              {orderBookSide === 'buy' && orderBookPrice && orderBookAmount && (
+                <p className="text-xs text-gray-500">
+                  Total: {formatEther((ethers.parseEther(orderBookPrice) * BigInt(Math.floor(parseFloat(orderBookAmount) || 0))).toString())} ETH
+                </p>
+              )}
+              <p className="text-xs text-gray-500">Your balance: {parseFloat(balance).toFixed(4)} ETH</p>
             </div>
-            <p className="text-xs text-gray-500">
-              Minimum bid: {minBidFormatted} ETH
-              {auction.type === 'ENGLISH' && ' (must be higher than current highest bid)'}
-            </p>
-            <p className="text-xs text-gray-500">
-              Your balance: {parseFloat(balance).toFixed(4)} ETH
-            </p>
-          </div>
+          ) : (
+            <div className="space-y-2">
+              <label htmlFor="bidAmount" className="block text-sm font-medium text-gray-700">
+                Bid Amount (ETH)
+              </label>
+              <div className="relative">
+                <CurrencyDollarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  id="bidAmount"
+                  type="number"
+                  step="0.001"
+                  min={auction.type === 'DUTCH' ? minBid : undefined}
+                  value={bidAmount}
+                  onChange={(e) => setBidAmount(e.target.value)}
+                  placeholder={minBidFormatted}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+              <p className="text-xs text-gray-500">
+                Minimum bid: {minBidFormatted} ETH
+                {auction.type === 'ENGLISH' && ' (must be higher than current highest bid)'}
+                {(auction.type === 'PLAYABLE' || auction.type === 'HOLD_TO_COMPETE') && ' (must be higher than current highest)'}
+              </p>
+              <p className="text-xs text-gray-500">
+                Your balance: {parseFloat(balance).toFixed(4)} ETH
+              </p>
+            </div>
+          )}
 
           <button
             onClick={handlePlaceBid}
-            disabled={isPlacingBid || !bidAmount || parseFloat(bidAmount) <= 0}
+            disabled={isPlacingBid || !canSubmit}
             className="w-full btn-primary py-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isPlacingBid ? 'Placing Bid...' : 'Place Bid'}
+            {isPlacingBid ? 'Placing Bid...' : isOrderBook ? (orderBookSide === 'buy' ? 'Place Buy Order' : 'Place Sell Order') : 'Place Bid'}
           </button>
 
           {auction.type === 'DUTCH' && (
@@ -250,9 +397,48 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
               </p>
             </div>
           )}
+
+          {auction.type === 'SEALED_BID' && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-800">
+                <strong>Sealed Bid:</strong> Your bid is hidden until the reveal phase. Deposit the same amount you intend to bid. Save your reveal data for the reveal phase.
+              </p>
+            </div>
+          )}
+
+          {auction.type === 'HOLD_TO_COMPETE' && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-800">
+                <strong>Hold to Compete:</strong> Bid with the auction&apos;s bidding token. Ensure you have approved the contract to spend your tokens.
+              </p>
+            </div>
+          )}
+
+          {auction.type === 'PLAYABLE' && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-800">
+                <strong>Playable Auction:</strong> Place a bid in ETH. Price may vary; your bid must meet the current requirements.
+              </p>
+            </div>
+          )}
+
+          {auction.type === 'RANDOM_SELECTION' && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-800">
+                <strong>Random Selection:</strong> All valid bids enter a pool; a winner is chosen at random when the auction ends.
+              </p>
+            </div>
+          )}
+
+          {auction.type === 'ORDER_BOOK' && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-800">
+                <strong>Order Book:</strong> Place buy or sell orders at your chosen price and quantity. Buy orders require ETH; sell orders use your locked tokens.
+              </p>
+            </div>
+          )}
         </>
       )}
     </div>
   )
 }
-
