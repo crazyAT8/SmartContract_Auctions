@@ -32,10 +32,9 @@ function getSignedContract(contractAddress, type) {
 // Get contract addresses
 router.get('/contracts', async (req, res) => {
   try {
-    // Load contract addresses from deployments.json
     const fs = require('fs');
     const path = require('path');
-    
+
     let contractAddresses = {};
     try {
       const deploymentsPath = path.join(__dirname, '../../contracts/deployments.json');

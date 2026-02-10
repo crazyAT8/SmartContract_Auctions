@@ -9,7 +9,7 @@
 | 1 | **Missing authentication endpoint** | `backend/src/routes/` | No `/api/auth/login`; frontend uses placeholder token. Users can't authenticate. |
 | 2 | **Contract deployment placeholder** | `backend/src/routes/auctions.js:190` | Auction start uses `'0x...'`; auctions never deploy to chain. |
 | 3 | **Backend wallet not implemented** | `backend/src/routes/web3.js:318-351` | All `place*Bid` throw "Wallet integration not implemented". |
-| 4 | **Bid validation not implemented** | `backend/src/routes/auctions.js:226` | Bids not validated against contract state. |
+| 4 | ~~**Bid validation not implemented**~~ | `backend/src/services/bidValidationService.js` | Resolved: bids validated against contract state on POST /:id/bids. |
 | 5 | **Bid model missing `transactionHash`** | `backend/prisma/schema.prisma` | Frontend sends it but it's not stored. |
 | 6 | **Auth middleware syntax error** | `backend/src/middleware/auth.js:54` | Missing `{` in `optionalAuth`; backend won't start. |
 | 7 | ~~**Contract ABIs not used**~~ | `frontend/src/contracts/`, `backend/src/contracts/` | Resolved: ABIs exported and wired in contract calls. |
@@ -50,7 +50,7 @@
 - [x] **Implement contract deployment service** – Backend service to deploy auction contracts on “start auction”; replace `'0x...'` in `backend/src/routes/auctions.js:190`.
 - [x] **Implement backend wallet** – Wallet from env in `backend`; implement all `place*Bid` in `backend/src/routes/web3.js`.
 - [x] **Complete frontend contract integration** – In `BiddingInterface.tsx`, add contract interaction for all 7 auction types (not just Dutch/English).
-- [ ] **Add bid validation** – Validate bids against contract state in `backend/src/routes/auctions.js:226`.
+- [x] **Add bid validation** – Validate bids against contract state in `backend/src/routes/auctions.js` via `bidValidationService`.
 
 ### Phase 2 – Environment & data
 

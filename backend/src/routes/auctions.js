@@ -5,6 +5,7 @@ const { authenticateUser } = require('../middleware/auth');
 const { logger } = require('../utils/logger');
 const { getRedis } = require('../config/redis');
 const { deployAuctionContract, isDeploymentConfigured } = require('../services/contractDeployment');
+const { validateBidAgainstContract } = require('../services/bidValidationService');
 
 const router = express.Router();
 
@@ -237,15 +238,29 @@ router.post('/:id/bids', authenticateUser, validateBid, async (req, res) => {
       return res.status(400).json({ error: 'Auction is not active' });
     }
 
-    // TODO: Validate bid against contract
-    // This would integrate with the Web3 service
+    // Validate bid against contract state when auction has a deployed contract
+    if (auction.contractAddress) {
+      const validation = await validateBidAgainstContract(auction, req.body.amount, {
+        orderType: req.body.orderType,
+        price: req.body.price,
+        quantity: req.body.quantity
+      });
+      if (!validation.valid) {
+        return res.status(400).json({ error: validation.error || 'Bid validation failed' });
+      }
+    }
 
     const bid = await prisma.bid.create({
       data: {
         auctionId: req.params.id,
         bidderId: req.user.id,
         amount: req.body.amount,
-        ...req.body // Include blindedBid, secret, etc. for sealed bids
+        transactionHash: req.body.transactionHash,
+        ...(req.body.blindedBid && { blindedBid: req.body.blindedBid }),
+        ...(req.body.secret && { secret: req.body.secret }),
+        ...(req.body.orderType && { orderType: req.body.orderType }),
+        ...(req.body.price && { price: req.body.price }),
+        ...(req.body.quantity && { quantity: req.body.quantity })
       },
       include: {
         bidder: {
@@ -254,12 +269,17 @@ router.post('/:id/bids', authenticateUser, validateBid, async (req, res) => {
       }
     });
 
-    // Update auction stats
+    // Update auction stats (totalVolume is String, so add manually)
+    const current = await prisma.auction.findUnique({
+      where: { id: req.params.id },
+      select: { totalVolume: true }
+    });
+    const newVolume = (BigInt(current?.totalVolume ?? '0') + BigInt(req.body.amount)).toString();
     await prisma.auction.update({
       where: { id: req.params.id },
       data: {
         totalBids: { increment: 1 },
-        totalVolume: { increment: req.body.amount }
+        totalVolume: newVolume
       }
     });
 

@@ -42,7 +42,7 @@ const auctionSchema = Joi.object({
   imageUrl: Joi.string().uri().optional(),
   type: Joi.string().valid(
     'DUTCH',
-    'ENGLISH', 
+    'ENGLISH',
     'SEALED_BID',
     'HOLD_TO_COMPETE',
     'PLAYABLE',
@@ -72,28 +72,28 @@ const bidSchema = Joi.object({
 
 const validateAuction = (req, res, next) => {
   const { error, value } = auctionSchema.validate(req.body);
-  
+
   if (error) {
     return res.status(400).json({
       error: 'Validation error',
       details: error.details.map(detail => detail.message)
     });
   }
-  
+
   req.body = value;
   next();
 };
 
 const validateBid = (req, res, next) => {
   const { error, value } = bidSchema.validate(req.body);
-  
+
   if (error) {
     return res.status(400).json({
       error: 'Validation error',
       details: error.details.map(detail => detail.message)
     });
   }
-  
+
   req.body = value;
   next();
 };
