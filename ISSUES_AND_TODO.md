@@ -54,8 +54,8 @@
 
 ### Phase 2 – Environment & data
 
-- [ ] **Create env files** – From examples: `backend/.env`, `contracts/.env`, `frontend/.env.local` with real values.
-- [ ] **Run Prisma migrations** – `cd backend && npx prisma migrate dev` (and ensure DB exists).
+- [x] **Create env files** – From examples: `backend/.env`, `contracts/.env`, `frontend/.env.local` with real values.
+- [x] **Run Prisma migrations** – `cd backend && npx prisma migrate dev` (and ensure DB exists).
 - [ ] **Deploy contracts locally** – Start Hardhat node, run deploy script, ensure `contracts/deployments.json` exists and backend reads it.
 
 ### Phase 3 – Missing features
