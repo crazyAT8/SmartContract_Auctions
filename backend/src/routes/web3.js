@@ -149,6 +149,45 @@ router.post('/auction/:contractAddress/bid', authenticateUser, async (req, res) 
   }
 });
 
+// Sealed bid reveal (contract phase: biddingEnd <= now < revealEnd)
+// Body: { value: string (ETH or wei), secret: string (bytes32 hex, 0x + 64 chars) }
+// Uses backend wallet to sign; for user-initiated reveal use frontend contract call.
+router.post('/auction/:contractAddress/reveal', authenticateUser, async (req, res) => {
+  try {
+    const { contractAddress } = req.params;
+    const { value, secret } = req.body;
+
+    if (value == null || value === '') {
+      return res.status(400).json({ error: 'Reveal requires value (ETH or wei)' });
+    }
+    if (!secret || typeof secret !== 'string') {
+      return res.status(400).json({ error: 'Reveal requires secret (bytes32 hex string)' });
+    }
+
+    const valueWei = toWei(value);
+    const secretHex = secret.startsWith('0x') ? secret : `0x${secret}`;
+    if (secretHex.length !== 66 || !/^0x[0-9a-fA-F]{64}$/.test(secretHex)) {
+      return res.status(400).json({ error: 'Secret must be 32 bytes (64 hex chars)' });
+    }
+
+    const txHash = await revealSealedBid(contractAddress, valueWei, secretHex);
+    res.json({ transactionHash: txHash });
+  } catch (error) {
+    logger.error('Error revealing sealed bid:', error);
+    const msg = error.message || 'Failed to reveal bid';
+    const status =
+      msg.includes('not configured') ||
+      msg.includes('is required') ||
+      msg.includes('Not in reveal phase') ||
+      msg.includes('Invalid') ||
+      msg.includes('No bid found') ||
+      msg.includes('Deposit insufficient')
+        ? 400
+        : 500;
+    res.status(status).json({ error: msg });
+  }
+});
+
 // Helper functions for different auction types (ABIs from backend/src/contracts/abis)
 async function getDutchAuctionState(contractAddress) {
   const abi = getAuctionABI('DUTCH');
@@ -333,6 +372,13 @@ async function placeSealedBidAuctionBid(contractAddress, bidData) {
   const contract = getSignedContract(contractAddress, 'SEALED_BID');
   const depositWei = deposit != null && deposit !== '' ? toWei(deposit) : 0n;
   const tx = await contract.bid(blindedBid, { value: depositWei });
+  const receipt = await tx.wait();
+  return receipt.hash;
+}
+
+async function revealSealedBid(contractAddress, valueWei, secretBytes32Hex) {
+  const contract = getSignedContract(contractAddress, 'SEALED_BID');
+  const tx = await contract.reveal(valueWei, secretBytes32Hex);
   const receipt = await tx.wait();
   return receipt.hash;
 }

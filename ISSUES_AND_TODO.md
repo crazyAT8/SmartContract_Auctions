@@ -22,7 +22,7 @@
 | 9 | Missing env files | Root, `backend/`, `contracts/`, `frontend/` | Only `.env.example`; app needs manual setup. |
 | 10 | Migrations not run | `backend/prisma/` | No migration files; schema not applied. |
 | 11 | No deployments.json | `contracts/deployments.json` | Backend can't resolve contract addresses. |
-| 12 | Sealed bid reveal incomplete | Frontend + backend | Sealed bid auctions can't complete reveal. |
+| 12 | ~~Sealed bid reveal incomplete~~ | Frontend + backend | Resolved: backend reveal endpoint + frontend UI and contract reveal. |
 | 13 | No auction end processing | Backend | No cron/listener; auctions don't auto-transition to ENDED. |
 | 14 | Notifications incomplete | Backend | No email/push; in-app only. |
 
@@ -60,13 +60,13 @@
 
 ### Phase 3 – Missing features
 
-- [ ] **Sealed bid reveal** – Backend endpoint + frontend UI and contract calls for reveal phase.
+- [x] **Sealed bid reveal** – Backend endpoint + frontend UI and contract calls for reveal phase.
 - [ ] **Auction end processing** – Cron or listener in backend to set ENDED and run winner/payout logic.
 - [ ] **Bid validation against contract** – Reuse/expand contract read logic used in Phase 1.
 
 ### Phase 4 – Quality & docs
 
-- [ ] **Write tests** – Backend routes, frontend components, contract tests in `contracts/test/`.
+- [x] **Write tests** – Backend routes, frontend components, contract tests in `contracts/test/`.
 - [ ] **Add API documentation** – Swagger/OpenAPI for backend.
 - [ ] **Add error boundaries** – React error boundaries in frontend.
 - [ ] **Tighten TypeScript** – Replace `any` in `frontend/src/` with proper types.

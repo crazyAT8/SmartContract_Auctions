@@ -107,4 +107,55 @@ describe('Web3 API', () => {
       expect(res.body.error).toContain('type');
     });
   });
+
+  describe('POST /api/web3/auction/:contractAddress/reveal', () => {
+    it('returns 401 when no auth token', async () => {
+      await request(app)
+        .post('/api/web3/auction/0xabc/reveal')
+        .send({ value: '1', secret: '0x' + 'a'.repeat(64) })
+        .expect(401);
+    });
+
+    it('returns 400 when value is missing', async () => {
+      const token = jwt.sign(
+        { address: testAddress, userId: mockUser.id },
+        process.env.JWT_SECRET || 'test-secret',
+        { expiresIn: '7d' }
+      );
+      const res = await request(app)
+        .post('/api/web3/auction/0xabc/reveal')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ secret: '0x' + 'a'.repeat(64) })
+        .expect(400);
+      expect(res.body.error).toContain('value');
+    });
+
+    it('returns 400 when secret is missing', async () => {
+      const token = jwt.sign(
+        { address: testAddress, userId: mockUser.id },
+        process.env.JWT_SECRET || 'test-secret',
+        { expiresIn: '7d' }
+      );
+      const res = await request(app)
+        .post('/api/web3/auction/0xabc/reveal')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ value: '1' })
+        .expect(400);
+      expect(res.body.error).toContain('secret');
+    });
+
+    it('returns 400 when secret is not 32 bytes', async () => {
+      const token = jwt.sign(
+        { address: testAddress, userId: mockUser.id },
+        process.env.JWT_SECRET || 'test-secret',
+        { expiresIn: '7d' }
+      );
+      const res = await request(app)
+        .post('/api/web3/auction/0xabc/reveal')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ value: '1', secret: '0xabcd' })
+        .expect(400);
+      expect(res.body.error).toContain('32 bytes');
+    });
+  });
 });

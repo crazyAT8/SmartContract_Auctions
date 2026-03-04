@@ -9,6 +9,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { AuctionDetails } from '@/components/auctions/AuctionDetails'
 import { BiddingInterface } from '@/components/auctions/BiddingInterface'
 import { BidHistory } from '@/components/auctions/BidHistory'
+import { SealedBidReveal } from '@/components/auctions/SealedBidReveal'
 import { useWeb3 } from '@/contexts/Web3Context'
 import { useSocket } from '@/contexts/SocketContext'
 import toast from 'react-hot-toast'
@@ -308,6 +309,15 @@ export default function AuctionDetailPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Sealed bid reveal phase (only visible when in reveal window) */}
+                {!isEnded && auction.type === 'SEALED_BID' && auction.contractAddress && (
+                  <SealedBidReveal
+                    auctionId={auction.id}
+                    contractAddress={auction.contractAddress}
+                    onRevealed={handleBidPlaced}
+                  />
+                )}
 
                 {/* Bidding Interface */}
                 {!isEnded && (
