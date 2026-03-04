@@ -62,7 +62,7 @@
 
 - [x] **Sealed bid reveal** – Backend endpoint + frontend UI and contract calls for reveal phase.
 - [x] **Auction end processing** – Cron or listener in backend to set ENDED and run winner/payout logic.
-- [ ] **Bid validation against contract** – Reuse/expand contract read logic used in Phase 1.
+- [x] **Bid validation against contract** – Reuse/expand contract read logic used in Phase 1 (shared contractReadService; bidValidationService and web3 GET state use it).
 
 ### Phase 4 – Quality & docs
 

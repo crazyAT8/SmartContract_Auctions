@@ -1,154 +1,21 @@
 /**
  * Validates bid payload against on-chain auction state.
  * Used by POST /api/auctions/:id/bids when the auction has a deployed contract.
+ * Contract read logic is centralized in contractReadService.
  */
 
 const { ethers } = require('ethers');
-const { getProvider } = require('./contractDeployment');
-const { getAuctionABI } = require('../contracts');
 const { logger } = require('../utils/logger');
-
-/** @type {ethers.Provider|null} */
-let _provider = null;
-
-function getReadProvider() {
-  if (_provider) return _provider;
-  _provider = getProvider();
-  return _provider;
-}
-
-/**
- * Fetch current block timestamp (seconds).
- * @returns {Promise<number>}
- */
-async function getBlockTimestamp() {
-  const provider = getReadProvider();
-  const block = await provider.getBlock('latest');
-  return block?.timestamp ?? Math.floor(Date.now() / 1000);
-}
-
-/**
- * Get Dutch auction state for validation.
- */
-async function getDutchState(contractAddress) {
-  const abi = getAuctionABI('DUTCH');
-  if (!abi) return null;
-  const contract = new ethers.Contract(contractAddress, abi, getReadProvider());
-  const [currentPrice, ended] = await Promise.all([
-    contract.getCurrentPrice(),
-    contract.ended()
-  ]);
-  return { currentPrice: BigInt(currentPrice.toString()), ended };
-}
-
-/**
- * Get English auction state for validation.
- */
-async function getEnglishState(contractAddress) {
-  const abi = getAuctionABI('ENGLISH');
-  if (!abi) return null;
-  const contract = new ethers.Contract(contractAddress, abi, getReadProvider());
-  const [auctionEndTime, highestBid, ended] = await Promise.all([
-    contract.auctionEndTime(),
-    contract.highestBid(),
-    contract.ended()
-  ]);
-  return {
-    auctionEndTime: Number(auctionEndTime.toString()),
-    highestBid: BigInt(highestBid.toString()),
-    ended
-  };
-}
-
-/**
- * Get SealedBid auction state (bidding/reveal phase and ended).
- */
-async function getSealedBidState(contractAddress) {
-  const abi = getAuctionABI('SEALED_BID');
-  if (!abi) return null;
-  const contract = new ethers.Contract(contractAddress, abi, getReadProvider());
-  const [biddingEnd, auctionEnded] = await Promise.all([
-    contract.biddingEnd(),
-    contract.auctionEnded()
-  ]);
-  return {
-    biddingEnd: Number(biddingEnd.toString()),
-    auctionEnded
-  };
-}
-
-/**
- * Get Hold-to-Compete auction state.
- */
-async function getHoldToCompeteState(contractAddress) {
-  const abi = getAuctionABI('HOLD_TO_COMPETE');
-  if (!abi) return null;
-  const contract = new ethers.Contract(contractAddress, abi, getReadProvider());
-  const [auctionEndTime, highestBid] = await Promise.all([
-    contract.auctionEndTime(),
-    contract.highestBid()
-  ]);
-  const endTime = Number(auctionEndTime.toString());
-  return {
-    auctionEndTime: endTime,
-    highestBid: BigInt(highestBid.toString())
-  };
-}
-
-/**
- * Get Playable auction state.
- */
-async function getPlayableState(contractAddress) {
-  const abi = getAuctionABI('PLAYABLE');
-  if (!abi) return null;
-  const contract = new ethers.Contract(contractAddress, abi, getReadProvider());
-  const [currentPrice, highestBid, auctionEnded, endTime] = await Promise.all([
-    contract.getCurrentPrice?.() ?? contract.currentPrice?.() ?? Promise.resolve(0n),
-    contract.highestBid(),
-    contract.auctionEnded(),
-    contract.endTime?.() ?? Promise.resolve(0)
-  ]);
-  return {
-    currentPrice: BigInt((currentPrice ?? 0n).toString()),
-    highestBid: BigInt((highestBid ?? 0n).toString()),
-    auctionEnded: !!auctionEnded,
-    endTime: Number((endTime ?? 0).toString())
-  };
-}
-
-/**
- * Get Random Selection auction state.
- */
-async function getRandomSelectionState(contractAddress) {
-  const abi = getAuctionABI('RANDOM_SELECTION');
-  if (!abi) return null;
-  const contract = new ethers.Contract(contractAddress, abi, getReadProvider());
-  const [auctionEndTime, auctionEnded] = await Promise.all([
-    contract.auctionEndTime(),
-    contract.auctionEnded()
-  ]);
-  return {
-    auctionEndTime: Number(auctionEndTime.toString()),
-    auctionEnded: !!auctionEnded
-  };
-}
-
-/**
- * Get Order Book auction state.
- */
-async function getOrderBookState(contractAddress) {
-  const abi = getAuctionABI('ORDER_BOOK');
-  if (!abi) return null;
-  const contract = new ethers.Contract(contractAddress, abi, getReadProvider());
-  const [auctionEndTime, auctionEnded] = await Promise.all([
-    contract.auctionEndTime(),
-    contract.auctionEnded()
-  ]);
-  return {
-    auctionEndTime: Number(auctionEndTime.toString()),
-    auctionEnded: !!auctionEnded
-  };
-}
+const {
+  getBlockTimestamp,
+  getDutchState,
+  getEnglishState,
+  getSealedBidState,
+  getHoldToCompeteState,
+  getPlayableState,
+  getRandomSelectionState,
+  getOrderBookState
+} = require('./contractReadService');
 
 /**
  * Validate a bid against the auction's on-chain state.
