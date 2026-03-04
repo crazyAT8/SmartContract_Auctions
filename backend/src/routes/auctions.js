@@ -198,10 +198,25 @@ router.post('/:id/start', authenticateUser, async (req, res) => {
 
     const { contractAddress, tokenAddress: deployedTokenAddress } = await deployAuctionContract(auction);
 
+    const startTime = new Date();
+    const durationSec = Math.max(0, parseInt(auction.duration, 10) || 3600);
+    const biddingTimeSec = Math.max(0, parseInt(auction.biddingTime, 10) || 3600);
+    const revealTimeSec = Math.max(0, parseInt(auction.revealTime, 10) || 1800);
+
+    let endTime = new Date(startTime.getTime() + durationSec * 1000);
+    if (auction.type === 'ENGLISH') {
+      endTime = new Date(startTime.getTime() + biddingTimeSec * 1000);
+    } else if (auction.type === 'SEALED_BID') {
+      endTime = new Date(startTime.getTime() + (biddingTimeSec + revealTimeSec) * 1000);
+    } else if (auction.type === 'HOLD_TO_COMPETE' || auction.type === 'PLAYABLE' || auction.type === 'RANDOM_SELECTION' || auction.type === 'ORDER_BOOK') {
+      endTime = new Date(startTime.getTime() + durationSec * 1000);
+    }
+
     const updateData = {
       status: 'ACTIVE',
       contractAddress,
-      startTime: new Date()
+      startTime,
+      endTime
     };
     if (deployedTokenAddress) {
       updateData.tokenAddress = deployedTokenAddress;

@@ -23,7 +23,7 @@
 | 10 | Migrations not run | `backend/prisma/` | No migration files; schema not applied. |
 | 11 | No deployments.json | `contracts/deployments.json` | Backend can't resolve contract addresses. |
 | 12 | ~~Sealed bid reveal incomplete~~ | Frontend + backend | Resolved: backend reveal endpoint + frontend UI and contract reveal. |
-| 13 | No auction end processing | Backend | No cron/listener; auctions don't auto-transition to ENDED. |
+| 13 | ~~No auction end processing~~ | Backend | Resolved: cron in backend sets ENDED and runs winner/payout logic. |
 | 14 | Notifications incomplete | Backend | No email/push; in-app only. |
 
 ### Low priority / enhancements
@@ -61,7 +61,7 @@
 ### Phase 3 – Missing features
 
 - [x] **Sealed bid reveal** – Backend endpoint + frontend UI and contract calls for reveal phase.
-- [ ] **Auction end processing** – Cron or listener in backend to set ENDED and run winner/payout logic.
+- [x] **Auction end processing** – Cron or listener in backend to set ENDED and run winner/payout logic.
 - [ ] **Bid validation against contract** – Reuse/expand contract read logic used in Phase 1.
 
 ### Phase 4 – Quality & docs
