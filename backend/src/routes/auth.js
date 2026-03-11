@@ -7,36 +7,47 @@ const { getRedis } = require('../config/redis');
 const { logger } = require('../utils/logger');
 const router = express.Router();
 
-// POST /api/auth/nonce - Get nonce for signing
+/** Build nonce handler: address can come from query (GET) or body (POST). */
+const handleNonce = async (req, res) => {
+  const address = req.body?.address ?? req.query?.address;
+
+  if (!address) {
+    return res.status(400).json({
+      error: 'Address is required. Use query ?address=0x... (GET) or body { "address": "0x..." } (POST).'
+    });
+  }
+
+  if (!ethers.isAddress(address)) {
+    return res.status(400).json({ error: 'Invalid address format' });
+  }
+
+  const normalizedAddress = ethers.getAddress(address);
+  const nonce = '0x' + crypto.randomBytes(32).toString('hex');
+  const redis = getRedis();
+  await redis.setex(`auth:nonce:${normalizedAddress}`, 300, nonce);
+
+  logger.info(`Nonce generated for address: ${normalizedAddress}`);
+
+  res.json({
+    nonce,
+    message: `Sign in to Auction dApp\n\nAddress: ${normalizedAddress}\nNonce: ${nonce}`
+  });
+};
+
+// GET /api/auth/nonce - Returns a nonce for the wallet to sign (?address=0x...)
+router.get('/nonce', async (req, res) => {
+  try {
+    await handleNonce(req, res);
+  } catch (error) {
+    logger.error('Error generating nonce:', error);
+    res.status(500).json({ error: 'Failed to generate nonce' });
+  }
+});
+
+// POST /api/auth/nonce - Returns a nonce for the wallet to sign (body: { address: "0x..." })
 router.post('/nonce', async (req, res) => {
   try {
-    const { address } = req.body;
-
-    if (!address) {
-      return res.status(400).json({ error: 'Address is required' });
-    }
-
-    // Validate address format
-    if (!ethers.isAddress(address)) {
-      return res.status(400).json({ error: 'Invalid address format' });
-    }
-
-    // Normalize address to checksum format
-    const normalizedAddress = ethers.getAddress(address);
-
-    // Generate a random nonce (32 bytes = 64 hex characters)
-    const nonce = '0x' + crypto.randomBytes(32).toString('hex');
-
-    // Store nonce in Redis with 5 minute expiration
-    const redis = getRedis();
-    await redis.setex(`auth:nonce:${normalizedAddress}`, 300, nonce);
-
-    logger.info(`Nonce generated for address: ${normalizedAddress}`);
-
-    res.json({ 
-      nonce,
-      message: `Sign in to Auction dApp\n\nAddress: ${normalizedAddress}\nNonce: ${nonce}`
-    });
+    await handleNonce(req, res);
   } catch (error) {
     logger.error('Error generating nonce:', error);
     res.status(500).json({ error: 'Failed to generate nonce' });
