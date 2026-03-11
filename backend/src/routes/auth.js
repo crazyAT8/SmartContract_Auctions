@@ -5,6 +5,8 @@ const crypto = require('crypto');
 const { prisma } = require('../config/database');
 const { getRedis } = require('../config/redis');
 const { logger } = require('../utils/logger');
+const { validateAuthNonce, validateAuthLogin } = require('../middleware/validation');
+const { authenticateUser } = require('../middleware/auth');
 const router = express.Router();
 
 /** Build nonce handler: address can come from query (GET) or body (POST). */
@@ -55,18 +57,15 @@ router.post('/nonce', async (req, res) => {
 });
 
 // POST /api/auth/login - Wallet signature authentication
-router.post('/login', async (req, res) => {
+router.post('/login', validateAuthLogin, async (req, res) => {
   try {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      logger.warn('JWT_SECRET is not set');
+      return res.status(503).json({ error: 'Authentication not configured' });
+    }
+
     const { address, signature, nonce } = req.body;
-
-    if (!address || !signature || !nonce) {
-      return res.status(400).json({ error: 'Address, signature, and nonce are required' });
-    }
-
-    // Validate address format
-    if (!ethers.isAddress(address)) {
-      return res.status(400).json({ error: 'Invalid address format' });
-    }
 
     // Normalize address to checksum format
     const normalizedAddress = ethers.getAddress(address);
@@ -119,7 +118,7 @@ router.post('/login', async (req, res) => {
         address: normalizedAddress,
         userId: user.id
       },
-      process.env.JWT_SECRET,
+      secret,
       { 
         expiresIn: process.env.JWT_EXPIRES_IN || '7d'
       }
@@ -134,6 +133,7 @@ router.post('/login', async (req, res) => {
         address: user.address,
         username: user.username,
         email: user.email,
+        avatar: user.avatar,
         createdAt: user.createdAt
       }
     });
@@ -141,6 +141,25 @@ router.post('/login', async (req, res) => {
     logger.error('Error during login:', error);
     res.status(500).json({ error: 'Authentication failed' });
   }
+});
+
+// GET /api/auth/me - Get current user from JWT (verify token and return profile)
+router.get('/me', authenticateUser, (req, res) => {
+  const user = req.user;
+  res.json({
+    id: user.id,
+    address: user.address,
+    username: user.username,
+    email: user.email,
+    avatar: user.avatar,
+    createdAt: user.createdAt
+  });
+});
+
+// POST /api/auth/logout - Client should clear token; endpoint for consistency
+router.post('/logout', (req, res) => {
+  // Stateless JWT: no server-side invalidation. Client clears localStorage.
+  res.json({ message: 'Logged out' });
 });
 
 module.exports = router;

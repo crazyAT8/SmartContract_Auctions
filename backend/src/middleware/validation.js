@@ -1,12 +1,48 @@
 const Joi = require('joi');
 
+// Auth: nonce request
+const authNonceSchema = Joi.object({
+  address: Joi.string().pattern(/^0x[a-fA-F0-9]{40}$/).required()
+});
+
+// Auth: login request (wallet signature)
+const authLoginSchema = Joi.object({
+  address: Joi.string().pattern(/^0x[a-fA-F0-9]{40}$/).required(),
+  signature: Joi.string().min(1).required(),
+  nonce: Joi.string().min(1).required()
+});
+
+const validateAuthNonce = (req, res, next) => {
+  const { error, value } = authNonceSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({
+      error: 'Validation error',
+      details: error.details.map(detail => detail.message)
+    });
+  }
+  req.body = value;
+  next();
+};
+
+const validateAuthLogin = (req, res, next) => {
+  const { error, value } = authLoginSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({
+      error: 'Validation error',
+      details: error.details.map(detail => detail.message)
+    });
+  }
+  req.body = value;
+  next();
+};
+
 const auctionSchema = Joi.object({
   title: Joi.string().min(1).max(200).required(),
   description: Joi.string().max(1000).optional(),
   imageUrl: Joi.string().uri().optional(),
   type: Joi.string().valid(
     'DUTCH',
-    'ENGLISH', 
+    'ENGLISH',
     'SEALED_BID',
     'HOLD_TO_COMPETE',
     'PLAYABLE',
@@ -30,38 +66,41 @@ const bidSchema = Joi.object({
   secret: Joi.string().optional(),
   orderType: Joi.string().valid('BUY', 'SELL').optional(),
   price: Joi.string().pattern(/^\d+$/).optional(),
-  quantity: Joi.string().pattern(/^\d+$/).optional()
+  quantity: Joi.string().pattern(/^\d+$/).optional(),
+  transactionHash: Joi.string().optional()
 });
 
 const validateAuction = (req, res, next) => {
   const { error, value } = auctionSchema.validate(req.body);
-  
+
   if (error) {
     return res.status(400).json({
       error: 'Validation error',
       details: error.details.map(detail => detail.message)
     });
   }
-  
+
   req.body = value;
   next();
 };
 
 const validateBid = (req, res, next) => {
   const { error, value } = bidSchema.validate(req.body);
-  
+
   if (error) {
     return res.status(400).json({
       error: 'Validation error',
       details: error.details.map(detail => detail.message)
     });
   }
-  
+
   req.body = value;
   next();
 };
 
 module.exports = {
+  validateAuthNonce,
+  validateAuthLogin,
   validateAuction,
   validateBid
 };

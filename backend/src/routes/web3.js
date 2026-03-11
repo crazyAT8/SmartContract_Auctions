@@ -1,21 +1,38 @@
 const express = require('express');
 const { ethers } = require('ethers');
-const { prisma } = require('../config/database');
 const { authenticateUser } = require('../middleware/auth');
 const { logger } = require('../utils/logger');
+const { getAuctionABI } = require('../contracts');
+const { getWallet, getProvider, isDeploymentConfigured } = require('../services/contractDeployment');
+const { getAuctionStateForApi } = require('../services/contractReadService');
 
 const router = express.Router();
 
-// Initialize provider
-const provider = new ethers.JsonRpcProvider(process.env.ETHEREUM_RPC_URL || 'http://localhost:8545');
+/** Parse amount to wei (accepts ETH string or wei string). */
+function toWei(value) {
+  if (value == null || value === '') throw new Error('Amount is required');
+  const s = String(value).trim();
+  if (s.includes('.') || /^\d+$/.test(s) && s.length <= 18) return ethers.parseEther(s);
+  return BigInt(s);
+}
+
+/** Get contract instance connected to backend wallet (for signing txs). */
+function getSignedContract(contractAddress, type) {
+  if (!isDeploymentConfigured()) {
+    throw new Error('Backend wallet not configured: set PRIVATE_KEY and ETHEREUM_RPC_URL in .env');
+  }
+  const abi = getAuctionABI(type);
+  if (!abi) throw new Error(`ABI not found for auction type: ${type}`);
+  const wallet = getWallet();
+  return new ethers.Contract(contractAddress, abi, wallet);
+}
 
 // Get contract addresses
 router.get('/contracts', async (req, res) => {
   try {
-    // Load contract addresses from deployments.json
     const fs = require('fs');
     const path = require('path');
-    
+
     let contractAddresses = {};
     try {
       const deploymentsPath = path.join(__dirname, '../../contracts/deployments.json');
@@ -32,7 +49,7 @@ router.get('/contracts', async (req, res) => {
   }
 });
 
-// Get auction contract state
+// Get auction contract state (uses shared contractReadService)
 router.get('/auction/:contractAddress/state', async (req, res) => {
   try {
     const { contractAddress } = req.params;
@@ -42,32 +59,14 @@ router.get('/auction/:contractAddress/state', async (req, res) => {
       return res.status(400).json({ error: 'Auction type is required' });
     }
 
-    let contractState = {};
+    const validTypes = ['DUTCH', 'ENGLISH', 'SEALED_BID', 'HOLD_TO_COMPETE', 'PLAYABLE', 'RANDOM_SELECTION', 'ORDER_BOOK'];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({ error: 'Invalid auction type' });
+    }
 
-    switch (type) {
-      case 'DUTCH':
-        contractState = await getDutchAuctionState(contractAddress);
-        break;
-      case 'ENGLISH':
-        contractState = await getEnglishAuctionState(contractAddress);
-        break;
-      case 'SEALED_BID':
-        contractState = await getSealedBidAuctionState(contractAddress);
-        break;
-      case 'HOLD_TO_COMPETE':
-        contractState = await getHoldToCompeteAuctionState(contractAddress);
-        break;
-      case 'PLAYABLE':
-        contractState = await getPlayableAuctionState(contractAddress);
-        break;
-      case 'RANDOM_SELECTION':
-        contractState = await getRandomSelectionAuctionState(contractAddress);
-        break;
-      case 'ORDER_BOOK':
-        contractState = await getOrderBookAuctionState(contractAddress);
-        break;
-      default:
-        return res.status(400).json({ error: 'Invalid auction type' });
+    const contractState = await getAuctionStateForApi(contractAddress, type);
+    if (!contractState) {
+      return res.status(500).json({ error: 'Failed to fetch auction state (ABI or contract unavailable)' });
     }
 
     res.json(contractState);
@@ -118,236 +117,135 @@ router.post('/auction/:contractAddress/bid', authenticateUser, async (req, res) 
     res.json({ transactionHash: txHash });
   } catch (error) {
     logger.error('Error placing bid:', error);
-    res.status(500).json({ error: 'Failed to place bid' });
+    const msg = error.message || 'Failed to place bid';
+    const status =
+      msg.includes('not configured') ||
+      msg.includes('is required') ||
+      msg.includes('must be') ||
+      msg.includes('Invalid')
+        ? 400
+        : 500;
+    res.status(status).json({ error: msg });
   }
 });
 
-// Helper functions for different auction types
-async function getDutchAuctionState(contractAddress) {
-  const contract = new ethers.Contract(contractAddress, [
-    'function getCurrentPrice() view returns (uint256)',
-    'function ended() view returns (bool)',
-    'function winner() view returns (address)',
-    'function seller() view returns (address)',
-    'function startPrice() view returns (uint256)',
-    'function reservePrice() view returns (uint256)',
-    'function startTime() view returns (uint256)',
-    'function duration() view returns (uint256)'
-  ], provider);
+// Sealed bid reveal (contract phase: biddingEnd <= now < revealEnd)
+// Body: { value: string (ETH or wei), secret: string (bytes32 hex, 0x + 64 chars) }
+// Uses backend wallet to sign; for user-initiated reveal use frontend contract call.
+router.post('/auction/:contractAddress/reveal', authenticateUser, async (req, res) => {
+  try {
+    const { contractAddress } = req.params;
+    const { value, secret } = req.body;
 
-  const [currentPrice, ended, winner, seller, startPrice, reservePrice, startTime, duration] = await Promise.all([
-    contract.getCurrentPrice(),
-    contract.ended(),
-    contract.winner(),
-    contract.seller(),
-    contract.startPrice(),
-    contract.reservePrice(),
-    contract.startTime(),
-    contract.duration()
-  ]);
+    if (value == null || value === '') {
+      return res.status(400).json({ error: 'Reveal requires value (ETH or wei)' });
+    }
+    if (!secret || typeof secret !== 'string') {
+      return res.status(400).json({ error: 'Reveal requires secret (bytes32 hex string)' });
+    }
 
-  return {
-    currentPrice: currentPrice.toString(),
-    ended,
-    winner,
-    seller,
-    startPrice: startPrice.toString(),
-    reservePrice: reservePrice.toString(),
-    startTime: startTime.toString(),
-    duration: duration.toString()
-  };
-}
+    const valueWei = toWei(value);
+    const secretHex = secret.startsWith('0x') ? secret : `0x${secret}`;
+    if (secretHex.length !== 66 || !/^0x[0-9a-fA-F]{64}$/.test(secretHex)) {
+      return res.status(400).json({ error: 'Secret must be 32 bytes (64 hex chars)' });
+    }
 
-async function getEnglishAuctionState(contractAddress) {
-  const contract = new ethers.Contract(contractAddress, [
-    'function auctionEndTime() view returns (uint256)',
-    'function highestBid() view returns (uint256)',
-    'function highestBidder() view returns (address)',
-    'function ended() view returns (bool)',
-    'function seller() view returns (address)'
-  ], provider);
+    const txHash = await revealSealedBid(contractAddress, valueWei, secretHex);
+    res.json({ transactionHash: txHash });
+  } catch (error) {
+    logger.error('Error revealing sealed bid:', error);
+    const msg = error.message || 'Failed to reveal bid';
+    const status =
+      msg.includes('not configured') ||
+      msg.includes('is required') ||
+      msg.includes('Not in reveal phase') ||
+      msg.includes('Invalid') ||
+      msg.includes('No bid found') ||
+      msg.includes('Deposit insufficient')
+        ? 400
+        : 500;
+    res.status(status).json({ error: msg });
+  }
+});
 
-  const [auctionEndTime, highestBid, highestBidder, ended, seller] = await Promise.all([
-    contract.auctionEndTime(),
-    contract.highestBid(),
-    contract.highestBidder(),
-    contract.ended(),
-    contract.seller()
-  ]);
-
-  return {
-    auctionEndTime: auctionEndTime.toString(),
-    highestBid: highestBid.toString(),
-    highestBidder,
-    ended,
-    seller
-  };
-}
-
-async function getSealedBidAuctionState(contractAddress) {
-  const contract = new ethers.Contract(contractAddress, [
-    'function biddingEnd() view returns (uint256)',
-    'function revealEnd() view returns (uint256)',
-    'function auctionEnded() view returns (bool)',
-    'function highestBidder() view returns (address)',
-    'function highestBid() view returns (uint256)',
-    'function auctioneer() view returns (address)'
-  ], provider);
-
-  const [biddingEnd, revealEnd, auctionEnded, highestBidder, highestBid, auctioneer] = await Promise.all([
-    contract.biddingEnd(),
-    contract.revealEnd(),
-    contract.auctionEnded(),
-    contract.highestBidder(),
-    contract.highestBid(),
-    contract.auctioneer()
-  ]);
-
-  return {
-    biddingEnd: biddingEnd.toString(),
-    revealEnd: revealEnd.toString(),
-    auctionEnded,
-    highestBidder,
-    highestBid: highestBid.toString(),
-    auctioneer
-  };
-}
-
-async function getHoldToCompeteAuctionState(contractAddress) {
-  const contract = new ethers.Contract(contractAddress, [
-    'function auctionEndTime() view returns (uint256)',
-    'function highestBidder() view returns (address)',
-    'function highestBid() view returns (uint256)',
-    'function minHoldAmount() view returns (uint256)',
-    'function biddingToken() view returns (address)',
-    'function seller() view returns (address)'
-  ], provider);
-
-  const [auctionEndTime, highestBidder, highestBid, minHoldAmount, biddingToken, seller] = await Promise.all([
-    contract.auctionEndTime(),
-    contract.highestBidder(),
-    contract.highestBid(),
-    contract.minHoldAmount(),
-    contract.biddingToken(),
-    contract.seller()
-  ]);
-
-  return {
-    auctionEndTime: auctionEndTime.toString(),
-    highestBidder,
-    highestBid: highestBid.toString(),
-    minHoldAmount: minHoldAmount.toString(),
-    biddingToken,
-    seller
-  };
-}
-
-async function getPlayableAuctionState(contractAddress) {
-  const contract = new ethers.Contract(contractAddress, [
-    'function getCurrentPrice() view returns (uint256)',
-    'function highestBidder() view returns (address)',
-    'function highestBid() view returns (uint256)',
-    'function auctionEnded() view returns (bool)',
-    'function startTime() view returns (uint256)',
-    'function endTime() view returns (uint256)'
-  ], provider);
-
-  const [currentPrice, highestBidder, highestBid, auctionEnded, startTime, endTime] = await Promise.all([
-    contract.getCurrentPrice(),
-    contract.highestBidder(),
-    contract.highestBid(),
-    contract.auctionEnded(),
-    contract.startTime(),
-    contract.endTime()
-  ]);
-
-  return {
-    currentPrice: currentPrice.toString(),
-    highestBidder,
-    highestBid: highestBid.toString(),
-    auctionEnded,
-    startTime: startTime.toString(),
-    endTime: endTime.toString()
-  };
-}
-
-async function getRandomSelectionAuctionState(contractAddress) {
-  const contract = new ethers.Contract(contractAddress, [
-    'function auctionEndTime() view returns (uint256)',
-    'function auctionEnded() view returns (bool)',
-    'function owner() view returns (address)'
-  ], provider);
-
-  const [auctionEndTime, auctionEnded, owner] = await Promise.all([
-    contract.auctionEndTime(),
-    contract.auctionEnded(),
-    contract.owner()
-  ]);
-
-  return {
-    auctionEndTime: auctionEndTime.toString(),
-    auctionEnded,
-    owner
-  };
-}
-
-async function getOrderBookAuctionState(contractAddress) {
-  const contract = new ethers.Contract(contractAddress, [
-    'function auctionEndTime() view returns (uint256)',
-    'function auctionEnded() view returns (bool)',
-    'function clearingPrice() view returns (uint256)',
-    'function admin() view returns (address)'
-  ], provider);
-
-  const [auctionEndTime, auctionEnded, clearingPrice, admin] = await Promise.all([
-    contract.auctionEndTime(),
-    contract.auctionEnded(),
-    contract.clearingPrice(),
-    contract.admin()
-  ]);
-
-  return {
-    auctionEndTime: auctionEndTime.toString(),
-    auctionEnded,
-    clearingPrice: clearingPrice.toString(),
-    admin
-  };
-}
-
-// Place bid functions (simplified - would need proper wallet integration)
+// Place bid functions (backend wallet signs transactions)
 async function placeDutchAuctionBid(contractAddress, amount) {
-  // This would require wallet integration
-  throw new Error('Wallet integration not implemented');
+  const contract = getSignedContract(contractAddress, 'DUTCH');
+  const valueWei = toWei(amount);
+  const tx = await contract.buy({ value: valueWei });
+  const receipt = await tx.wait();
+  return receipt.hash;
 }
 
 async function placeEnglishAuctionBid(contractAddress, amount) {
-  // This would require wallet integration
-  throw new Error('Wallet integration not implemented');
+  const contract = getSignedContract(contractAddress, 'ENGLISH');
+  const valueWei = toWei(amount);
+  const tx = await contract.bid({ value: valueWei });
+  const receipt = await tx.wait();
+  return receipt.hash;
 }
 
 async function placeSealedBidAuctionBid(contractAddress, bidData) {
-  // This would require wallet integration
-  throw new Error('Wallet integration not implemented');
+  const { blindedBid, deposit } = bidData || {};
+  if (!blindedBid) throw new Error('Sealed bid requires blindedBid (bytes32 hex string)');
+  const contract = getSignedContract(contractAddress, 'SEALED_BID');
+  const depositWei = deposit != null && deposit !== '' ? toWei(deposit) : 0n;
+  const tx = await contract.bid(blindedBid, { value: depositWei });
+  const receipt = await tx.wait();
+  return receipt.hash;
+}
+
+async function revealSealedBid(contractAddress, valueWei, secretBytes32Hex) {
+  const contract = getSignedContract(contractAddress, 'SEALED_BID');
+  const tx = await contract.reveal(valueWei, secretBytes32Hex);
+  const receipt = await tx.wait();
+  return receipt.hash;
 }
 
 async function placeHoldToCompeteAuctionBid(contractAddress, amount) {
-  // This would require wallet integration
-  throw new Error('Wallet integration not implemented');
+  const contract = getSignedContract(contractAddress, 'HOLD_TO_COMPETE');
+  const amountWei = toWei(amount);
+  const tx = await contract.placeBid(amountWei);
+  const receipt = await tx.wait();
+  return receipt.hash;
 }
 
 async function placePlayableAuctionBid(contractAddress, amount) {
-  // This would require wallet integration
-  throw new Error('Wallet integration not implemented');
+  const contract = getSignedContract(contractAddress, 'PLAYABLE');
+  const valueWei = toWei(amount);
+  const tx = await contract.placeBid({ value: valueWei });
+  const receipt = await tx.wait();
+  return receipt.hash;
 }
 
 async function placeRandomSelectionAuctionBid(contractAddress, amount) {
-  // This would require wallet integration
-  throw new Error('Wallet integration not implemented');
+  const contract = getSignedContract(contractAddress, 'RANDOM_SELECTION');
+  const valueWei = toWei(amount);
+  const tx = await contract.placeBid({ value: valueWei });
+  const receipt = await tx.wait();
+  return receipt.hash;
 }
 
 async function placeOrderBookAuctionOrder(contractAddress, orderData) {
-  // This would require wallet integration
-  throw new Error('Wallet integration not implemented');
+  const { side, price, amount } = orderData || {};
+  if (!side || price == null || amount == null) {
+    throw new Error('OrderBook order requires side ("buy"|"sell"), price, and amount');
+  }
+  const contract = getSignedContract(contractAddress, 'ORDER_BOOK');
+  const priceWei = toWei(price);
+  const amountUnits = BigInt(String(amount).trim());
+  if (amountUnits <= 0n) throw new Error('OrderBook amount must be positive');
+  let tx;
+  if (side === 'buy') {
+    const valueWei = priceWei * amountUnits;
+    tx = await contract.placeBuyOrder(priceWei, amountUnits, { value: valueWei });
+  } else if (side === 'sell') {
+    tx = await contract.placeSellOrder(priceWei, amountUnits);
+  } else {
+    throw new Error('OrderBook side must be "buy" or "sell"');
+  }
+  const receipt = await tx.wait();
+  return receipt.hash;
 }
 
 module.exports = router;

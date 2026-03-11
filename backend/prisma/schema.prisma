@@ -111,6 +111,9 @@ model Bid {
   price       String?   // Price per unit
   quantity    String?   // Quantity
 
+  // On-chain transaction
+  transactionHash String?
+
   // Relations
   auction     Auction   @relation(fields: [auctionId], references: [id], onDelete: Cascade)
   bidder      User      @relation(fields: [bidderId], references: [id])

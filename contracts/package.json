@@ -5,6 +5,10 @@
   "main": "index.js",
   "scripts": {
     "compile": "hardhat compile",
+    "export-abis": "node scripts/export-abis.js",
+    "compile:abis": "hardhat compile && node scripts/export-abis.js",
+    "export-artifacts": "node scripts/export-artifacts.js",
+    "compile:artifacts": "hardhat compile && node scripts/export-artifacts.js",
     "test": "hardhat test",
     "deploy": "hardhat run scripts/deploy.js",
     "deploy:local": "hardhat run scripts/deploy.js --network localhost",

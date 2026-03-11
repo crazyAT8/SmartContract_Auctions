@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 describe("Auction Contracts", function () {
-  let dutchAuction, englishAuction, sealedBidAuction;
+  let dutchAuction, englishAuction, sealedBidAuction, randomSelectionAuction, playableAuction, orderBookAuction;
   let owner, bidder1, bidder2, bidder3;
 
   beforeEach(async function () {
@@ -30,6 +30,24 @@ describe("Auction Contracts", function () {
       3600,  // bidding time
       1800   // reveal time
     );
+
+    // Deploy Random Selection Auction
+    const RandomSelectionAuction = await ethers.getContractFactory("RandomSelectionAuction");
+    randomSelectionAuction = await RandomSelectionAuction.deploy(3600);
+
+    // Deploy Playable Auction (startingPrice, reservePrice, duration, priceDropInterval, priceDropAmount)
+    const PlayableAuction = await ethers.getContractFactory("PlayableAuction");
+    playableAuction = await PlayableAuction.deploy(
+      ethers.parseEther("5"),  // starting price
+      ethers.parseEther("1"),  // reserve price
+      3600,                    // duration
+      60,                      // price drop interval
+      ethers.parseEther("0.1") // price drop amount
+    );
+
+    // Deploy Order Book Auction
+    const OrderBookAuction = await ethers.getContractFactory("OrderBookAuction");
+    orderBookAuction = await OrderBookAuction.deploy(3600);
   });
 
   describe("Dutch Auction", function () {
@@ -103,6 +121,85 @@ describe("Auction Contracts", function () {
       await expect(
         sealedBidAuction.connect(bidder1).reveal(value, secret)
       ).to.emit(sealedBidAuction, "BidRevealed");
+    });
+  });
+
+  describe("Random Selection Auction", function () {
+    it("Should allow placing bids", async function () {
+      await expect(
+        randomSelectionAuction.connect(bidder1).placeBid({ value: ethers.parseEther("1") })
+      ).to.emit(randomSelectionAuction, "BidPlaced");
+    });
+
+    it("Should reject zero bid", async function () {
+      await expect(
+        randomSelectionAuction.connect(bidder1).placeBid({ value: 0 })
+      ).to.be.revertedWith("Bid must be greater than 0");
+    });
+
+    it("Should allow multiple bidders and select winner after end", async function () {
+      await randomSelectionAuction.connect(bidder1).placeBid({ value: ethers.parseEther("1") });
+      await randomSelectionAuction.connect(bidder2).placeBid({ value: ethers.parseEther("2") });
+
+      await ethers.provider.send("evm_increaseTime", [3600]);
+      await ethers.provider.send("evm_mine");
+
+      await expect(
+        randomSelectionAuction.connect(owner).selectWinner()
+      ).to.emit(randomSelectionAuction, "AuctionEnded");
+
+      expect(await randomSelectionAuction.auctionEnded()).to.be.true;
+    });
+  });
+
+  describe("Playable Auction", function () {
+    it("Should return correct starting price", async function () {
+      const price = await playableAuction.getCurrentPrice();
+      expect(price).to.equal(ethers.parseEther("5"));
+    });
+
+    it("Should allow placing bid at or above current price", async function () {
+      await expect(
+        playableAuction.connect(bidder1).placeBid({ value: ethers.parseEther("5") })
+      ).to.emit(playableAuction, "NewBid");
+    });
+
+    it("Should reject bid below current price", async function () {
+      await expect(
+        playableAuction.connect(bidder1).placeBid({ value: ethers.parseEther("1") })
+      ).to.be.revertedWith("Bid amount too low");
+    });
+
+    it("Should allow finalizing after end time", async function () {
+      await playableAuction.connect(bidder1).placeBid({ value: ethers.parseEther("5") });
+
+      await ethers.provider.send("evm_increaseTime", [3600]);
+      await ethers.provider.send("evm_mine");
+
+      await expect(
+        playableAuction.connect(owner).finalizeAuction()
+      ).to.emit(playableAuction, "AuctionEnded");
+    });
+  });
+
+  describe("Order Book Auction", function () {
+    it("Should allow placing buy order with correct ETH", async function () {
+      const price = ethers.parseEther("1");
+      const amount = 10n;
+      const value = price * amount;
+
+      await expect(
+        orderBookAuction.connect(bidder1).placeBuyOrder(price, amount, { value })
+      ).to.emit(orderBookAuction, "OrderPlaced");
+    });
+
+    it("Should reject buy order with incorrect ETH amount", async function () {
+      const price = ethers.parseEther("1");
+      const amount = 10n;
+
+      await expect(
+        orderBookAuction.connect(bidder1).placeBuyOrder(price, amount, { value: ethers.parseEther("5") })
+      ).to.be.revertedWith("Incorrect ETH sent");
     });
   });
 });

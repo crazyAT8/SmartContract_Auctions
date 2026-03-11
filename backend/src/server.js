@@ -17,6 +17,7 @@ const { connectRedis } = require('./config/redis');
 const { errorHandler } = require('./middleware/errorHandler');
 const { logger } = require('./utils/logger');
 const { setupSocketHandlers } = require('./services/socketService');
+const { run: runAuctionEndProcessor } = require('./services/auctionEndProcessor');
 
 const app = express();
 const server = createServer(app);
@@ -90,6 +91,16 @@ async function startServer() {
       logger.info(`Server running on port ${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
     });
+
+    // Auction end processing: run periodically to set ENDED and run winner/payout logic
+    const cronIntervalMs = Math.max(15000, parseInt(process.env.AUCTION_END_CRON_INTERVAL_MS, 10) || 60000);
+    const cronHandle = setInterval(() => {
+      runAuctionEndProcessor().catch((err) => logger.error('Auction end cron error:', err));
+    }, cronIntervalMs);
+    cronHandle.unref?.(); // allow process to exit without waiting for timer
+
+    // Store for graceful shutdown
+    if (typeof global !== 'undefined') global.__auctionEndCronHandle = cronHandle;
   } catch (error) {
     logger.error('Failed to start server:', error);
     process.exit(1);
@@ -97,20 +108,24 @@ async function startServer() {
 }
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down gracefully');
+function shutdown() {
+  const cronHandle = typeof global !== 'undefined' && global.__auctionEndCronHandle;
+  if (cronHandle) clearInterval(cronHandle);
+  logger.info('Shutting down gracefully');
   server.close(() => {
     logger.info('Process terminated');
     process.exit(0);
   });
+}
+
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM received');
+  shutdown();
 });
 
 process.on('SIGINT', () => {
-  logger.info('SIGINT received, shutting down gracefully');
-  server.close(() => {
-    logger.info('Process terminated');
-    process.exit(0);
-  });
+  logger.info('SIGINT received');
+  shutdown();
 });
 
 startServer();
