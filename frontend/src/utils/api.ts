@@ -4,61 +4,71 @@ import { ethers } from 'ethers'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
-// Get JWT token by signing a message with wallet
+const AUTH_TOKEN_KEY = 'auth_token'
+
+/**
+ * Real wallet auth: nonce → sign message → login.
+ * 1. POST /auth/nonce with address → get nonce + message
+ * 2. Sign message with wallet (signer.signMessage)
+ * 3. POST /auth/login with address, signature, nonce → get JWT
+ */
 export async function getAuthToken(signer: ethers.JsonRpcSigner, address: string): Promise<string | null> {
   try {
-    // Step 1: Request a nonce from the backend
     const nonceResponse = await fetch(`${API_BASE_URL}/auth/nonce`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ address }),
     })
 
     if (!nonceResponse.ok) {
-      const error = await nonceResponse.json()
-      throw new Error(error.error || 'Failed to get nonce')
+      const err = await nonceResponse.json().catch(() => ({}))
+      throw new Error(err.error || 'Failed to get nonce')
     }
 
     const { nonce, message } = await nonceResponse.json()
+    if (!nonce || !message) throw new Error('Invalid nonce response')
 
-    // Step 2: Sign the message containing the nonce
     const signature = await signer.signMessage(message)
 
-    // Step 3: Send the signature to the backend to get a JWT token
     const loginResponse = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ address, signature, nonce }),
     })
 
     if (!loginResponse.ok) {
-      const error = await loginResponse.json()
-      throw new Error(error.error || 'Failed to authenticate')
+      const err = await loginResponse.json().catch(() => ({}))
+      throw new Error(err.error || 'Failed to authenticate')
     }
 
-    const { token } = await loginResponse.json()
+    const data = await loginResponse.json()
+    const token = data.token
+    if (!token) throw new Error('No token in login response')
 
-    // Store token in localStorage
-    localStorage.setItem('auth_token', token)
-    
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(AUTH_TOKEN_KEY, token)
+    }
     return token
   } catch (error) {
-    console.error('Error getting auth token:', error)
+    console.error('Auth (nonce → sign → login) failed:', error)
     return null
   }
 }
 
-// Get stored auth token
 export function getStoredAuthToken(): string | null {
   if (typeof window === 'undefined') return null
-  return localStorage.getItem('auth_token')
+  return localStorage.getItem(AUTH_TOKEN_KEY)
 }
 
-// Make authenticated API request
+export function clearAuthToken(): void {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem(AUTH_TOKEN_KEY)
+}
+
+/**
+ * Authenticated request. Uses stored JWT; if none and signer+address provided,
+ * runs nonce → sign → login first, then sends request with Bearer token.
+ */
 export async function authenticatedFetch(
   url: string,
   options: RequestInit = {},
@@ -66,44 +76,34 @@ export async function authenticatedFetch(
   address?: string
 ): Promise<Response> {
   let token = getStoredAuthToken()
-  
-  // If no token and we have signer/address, try to get one
   if (!token && signer && address) {
     token = await getAuthToken(signer, address)
   }
-  
-  const headers = {
+  const headers: HeadersInit = {
     'Content-Type': 'application/json',
-    ...(token && { Authorization: `Bearer ${token}` }),
-    ...options.headers,
+    ...(options.headers as Record<string, string>),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
-  
-  return fetch(url, {
-    ...options,
-    headers,
-  })
+  return fetch(url, { ...options, headers })
 }
 
-// For now, we'll use a simpler approach - the backend might need to be updated
-// to handle wallet-based auth differently. This is a placeholder implementation.
+/**
+ * API request with real auth: uses nonce → sign → login when signer/address
+ * are provided and no token is stored. For protected routes, auth failures
+ * are thrown instead of falling back to unauthenticated requests.
+ */
 export async function apiRequest(
   url: string,
   options: RequestInit = {},
   signer?: ethers.JsonRpcSigner,
   address?: string
 ): Promise<Response> {
-  // Try authenticated first, fallback to regular fetch
-  try {
-    return await authenticatedFetch(url, options, signer, address)
-  } catch (error) {
-    // Fallback to regular fetch if auth fails
-    return fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    })
+  const res = await authenticatedFetch(url, options, signer, address)
+  if (res.status === 401 && signer && address) {
+    clearAuthToken()
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || 'Authentication required')
   }
+  return res
 }
 

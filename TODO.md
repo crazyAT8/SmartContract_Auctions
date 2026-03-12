@@ -10,7 +10,7 @@ Use this list to complete the app. Order follows priority (critical → enhancem
 
 - [ ] **Fix auth middleware** – Ensure `backend/src/middleware/auth.js` has no syntax errors (opening brace in `optionalAuth`); confirm server starts.
 - [ ] **Add `/api/auth/nonce`** – Endpoint that returns a nonce for the wallet to sign.
-- [ ] **Add `/api/auth/login`** – Accept `address` + `signature`, verify with ethers, find/create user, issue JWT; wire route in `server.js`.
+- [x] **Add `/api/auth/login`** – Accept `address` + `signature`, verify with ethers, find/create user, issue JWT; wire route in `server.js`.
 - [ ] **Use real auth in frontend** – Replace placeholder token logic in `frontend/src/utils/api.ts` with nonce → sign → login flow.
 
 ### Database & bid tracking
