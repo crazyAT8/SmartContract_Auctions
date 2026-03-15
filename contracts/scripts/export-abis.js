@@ -31,6 +31,17 @@ function ensureDir(dir) {
   }
 }
 
+function findArtifactPath(name) {
+  const candidates = [
+    path.join(ARTIFACTS_DIR, `${name}.sol`, `${name}.json'),
+    path.join(ARTIFACTS_DIR, 'contracts', `${name}.sol`, `${name}.json'),
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
 function exportAbis() {
   if (!fs.existsSync(ARTIFACTS_DIR)) {
     console.error('Artifacts not found. Run "npm run compile" in contracts/ first.');
@@ -43,9 +54,9 @@ function exportAbis() {
 
   let exported = 0;
   for (const name of CONTRACT_NAMES) {
-    const artifactPath = path.join(ARTIFACTS_DIR, `${name}.sol`, `${name}.json`);
-    if (!fs.existsSync(artifactPath)) {
-      console.warn(`Skip ${name}: artifact not found at ${artifactPath}`);
+    const artifactPath = findArtifactPath(name);
+    if (!artifactPath) {
+      console.warn(`Skip ${name}: artifact not found (searched artifacts/contracts)`);
       continue;
     }
     const artifact = JSON.parse(fs.readFileSync(artifactPath, 'utf8'));

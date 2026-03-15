@@ -20,7 +20,7 @@ Use this list to complete the app. Order follows priority (critical → enhancem
 
 ### Contract integration (backend)
 
-- [ ] **Export contract ABIs** – Script or copy from `contracts/artifacts` to `contracts/abis/`; make ABIs available to `frontend/src/contracts/abis/` and `backend/src/contracts/abis/`.
+- [x] **Export contract ABIs** – Script or copy from `contracts/artifacts` to `contracts/abis/`; make ABIs available to `frontend/src/contracts/abis/` and `backend/src/contracts/abis/`. Use `npm run export-abis` (or `npm run compile:abis`) in `contracts/`.
 - [ ] **Contract deployment service** – Implement `backend/src/services/contractDeployment.js` (deploy by auction type using env private key); replace placeholder in `backend/src/routes/auctions.js` (~line 190) with real deployment and save contract address.
 - [ ] **Backend wallet service** – Implement `backend/src/services/walletService.js`; replace "Wallet integration not implemented" in all `place*Bid` handlers in `backend/src/routes/web3.js` with real contract calls using ABIs.
 
@@ -44,6 +44,7 @@ Use this list to complete the app. Order follows priority (critical → enhancem
 - [ ] **Redis** – Install/start Redis; add connection settings to `backend/.env`; confirm backend connects.
 
 ### Blockchain and contracts
+
 - [ ] **Local chain** – Run Hardhat node (`npx hardhat node` in `contracts`); deploy with `npx hardhat run scripts/deploy.js --network localhost`.
 - [ ] **Deployment output** – Ensure `contracts/deployments.json` (or equivalent) exists and backend reads contract addresses from config (e.g. `backend/src/routes/web3.js`).
 
@@ -94,7 +95,7 @@ Use this list to complete the app. Order follows priority (critical → enhancem
 ## Quick reference – run order for local dev
 
 1. Backend: `cd backend && npm install && npx prisma migrate dev && npx prisma generate && npm run dev`
-2. Contracts: `cd contracts && npx hardhat node` (separate terminal), then `npx hardhat run scripts/deploy.js --network localhost`
+2. Contracts: `cd contracts && npm run compile` (then `npm run export-abis` to sync ABIs to frontend/backend). For local chain: `npx hardhat node` (separate terminal), then `npx hardhat run scripts/deploy.js --network localhost`
 3. Frontend: `cd frontend && npm install && npm run dev`
 4. Browser: http://localhost:3000 → connect wallet → create auction → place bid
 
