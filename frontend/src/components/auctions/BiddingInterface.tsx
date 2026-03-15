@@ -165,12 +165,17 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
     }
   }
 
+  /**
+   * Places a bid on the auction contract using the ABI for the auction type.
+   * All 7 auction types (Dutch, English, Sealed Bid, Hold to Compete, Playable, Random Selection, Order Book)
+   * are supported via contract interaction when contractAddress is set.
+   */
   const placeBidOnContract = async (contractAddress: string, type: AuctionType) => {
     if (!signer) throw new Error('Wallet not connected')
 
     const abi = getAuctionABI(type)
     if (!abi) {
-      return placeBidViaAPI(bidAmount)
+      throw new Error(`No ABI configured for auction type "${type}". Contract bidding is required when a contract is deployed.`)
     }
 
     const contract = new ethers.Contract(contractAddress, abi, signer)
@@ -206,7 +211,11 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
         tx = await contract.placeBid(amountWei)
         break
       }
-      case 'PLAYABLE':
+      case 'PLAYABLE': {
+        const value = ethers.parseEther(bidAmount)
+        tx = await contract.placeBid({ value })
+        break
+      }
       case 'RANDOM_SELECTION': {
         const value = ethers.parseEther(bidAmount)
         tx = await contract.placeBid({ value })
@@ -223,8 +232,10 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
         }
         break
       }
-      default:
-        return placeBidViaAPI(bidAmount)
+      default: {
+        const _exhaust: never = type
+        throw new Error(`Unsupported auction type for contract bid: ${_exhaust}`)
+      }
     }
 
     toast.loading('Waiting for transaction confirmation...', { id: 'tx-pending' })
