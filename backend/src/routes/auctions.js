@@ -254,7 +254,7 @@ router.post('/:id/bids', authenticateUser, validateBid, async (req, res) => {
       return res.status(400).json({ error: 'Auction is not active' });
     }
 
-    // Validate bid against contract state when auction has a deployed contract
+    // Validate bid against contract state before persisting (contractValidator)
     if (auction.contractAddress) {
       const validation = await validateBidAgainstContract(auction, req.body.amount, {
         orderType: req.body.orderType,
