@@ -1,31 +1,10 @@
 const express = require('express');
-const { ethers } = require('ethers');
 const { authenticateUser } = require('../middleware/auth');
 const { logger } = require('../utils/logger');
-const { getAuctionABI } = require('../contracts');
-const { getWallet, getProvider, isDeploymentConfigured } = require('../services/contractDeployment');
 const { getAuctionStateForApi } = require('../services/contractReadService');
+const { getSignedContract, toWei } = require('../services/walletService');
 
 const router = express.Router();
-
-/** Parse amount to wei (accepts ETH string or wei string). */
-function toWei(value) {
-  if (value == null || value === '') throw new Error('Amount is required');
-  const s = String(value).trim();
-  if (s.includes('.') || /^\d+$/.test(s) && s.length <= 18) return ethers.parseEther(s);
-  return BigInt(s);
-}
-
-/** Get contract instance connected to backend wallet (for signing txs). */
-function getSignedContract(contractAddress, type) {
-  if (!isDeploymentConfigured()) {
-    throw new Error('Backend wallet not configured: set PRIVATE_KEY and ETHEREUM_RPC_URL in .env');
-  }
-  const abi = getAuctionABI(type);
-  if (!abi) throw new Error(`ABI not found for auction type: ${type}`);
-  const wallet = getWallet();
-  return new ethers.Contract(contractAddress, abi, wallet);
-}
 
 // Get contract addresses
 router.get('/contracts', async (req, res) => {

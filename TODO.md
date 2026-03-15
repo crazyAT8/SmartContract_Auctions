@@ -21,7 +21,7 @@ Use this list to complete the app. Order follows priority (critical → enhancem
 ### Contract integration (backend)
 
 - [x] **Export contract ABIs** – Script or copy from `contracts/artifacts` to `contracts/abis/`; make ABIs available to `frontend/src/contracts/abis/` and `backend/src/contracts/abis/`. Use `npm run export-abis` (or `npm run compile:abis`) in `contracts/`.
-- [ ] **Contract deployment service** – Implement `backend/src/services/contractDeployment.js` (deploy by auction type using env private key); replace placeholder in `backend/src/routes/auctions.js` (~line 190) with real deployment and save contract address.
+- [x] **Contract deployment service** – Implement `backend/src/services/contractDeployment.js` (deploy by auction type using env private key); replace placeholder in `backend/src/routes/auctions.js` (~line 190) with real deployment and save contract address.
 - [ ] **Backend wallet service** – Implement `backend/src/services/walletService.js`; replace "Wallet integration not implemented" in all `place*Bid` handlers in `backend/src/routes/web3.js` with real contract calls using ABIs.
 
 ### Contract integration (frontend)

@@ -196,6 +196,7 @@ router.post('/:id/start', authenticateUser, async (req, res) => {
       });
     }
 
+    // Deploy auction contract on-chain (uses PRIVATE_KEY); address is saved below
     const { contractAddress, tokenAddress: deployedTokenAddress } = await deployAuctionContract(auction);
 
     const startTime = new Date();
