@@ -32,7 +32,7 @@ contract PlayableAuction is ReentrancyGuard, Ownable {
         uint256 _duration,
         uint256 _priceDropInterval,
         uint256 _priceDropAmount
-    ) {
+    ) Ownable(msg.sender) {
         require(_startingPrice > _reservePrice, "Starting price must be higher than reserve price");
 
         startingPrice = _startingPrice;
