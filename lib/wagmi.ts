@@ -1,6 +1,7 @@
 import { getDefaultWallets } from '@rainbow-me/rainbowkit'
 import { configureChains, createConfig } from 'wagmi'
-import { mainnet, polygon, arbitrum, optimism, localhost } from 'wagmi/chains'
+import { InjectedConnector } from 'wagmi/connectors/injected'
+import { mainnet, polygon, arbitrum, optimism, localhost } from 'viem/chains'
 import { alchemyProvider } from 'wagmi/providers/alchemy'
 import { publicProvider } from 'wagmi/providers/public'
 
@@ -12,11 +13,20 @@ const { chains, publicClient } = configureChains(
   ]
 )
 
-const { connectors } = getDefaultWallets({
-  appName: 'Auction DApp',
-  projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || '',
-  chains
-})
+const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID
+
+const connectors = projectId
+  ? getDefaultWallets({
+      appName: 'Auction DApp',
+      projectId,
+      chains,
+    }).connectors
+  : [
+      new InjectedConnector({
+        chains,
+        options: { shimDisconnect: true },
+      }),
+    ]
 
 export const config = createConfig({
   autoConnect: true,
