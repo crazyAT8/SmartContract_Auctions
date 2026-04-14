@@ -86,7 +86,7 @@ export default function SealedBidAuction({ contractAddress }: SealedBidAuctionPr
   return (
     <motion.div
       className="max-w-4xl mx-auto p-6"
-      initial={{ opacity: 0, y: 20 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
@@ -126,7 +126,7 @@ export default function SealedBidAuction({ contractAddress }: SealedBidAuctionPr
           {phase === 'bidding' && (
             <motion.div
               className="bg-blue-50 rounded-lg p-6 mb-6"
-              initial={{ opacity: 0, x: -20 }}
+              initial={false}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3 }}
             >
@@ -181,7 +181,7 @@ export default function SealedBidAuction({ contractAddress }: SealedBidAuctionPr
           {phase === 'reveal' && (
             <motion.div
               className="bg-green-50 rounded-lg p-6 mb-6"
-              initial={{ opacity: 0, x: -20 }}
+              initial={false}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3 }}
             >

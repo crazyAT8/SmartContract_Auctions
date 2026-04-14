@@ -68,7 +68,7 @@ export default function Home() {
           {showTypeSelector ? (
             <motion.div
               key="selector"
-              initial={{ opacity: 0 }}
+              initial={false}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
@@ -78,7 +78,7 @@ export default function Home() {
           ) : (
             <motion.div
               key="auction"
-              initial={{ opacity: 0, y: 20 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}

@@ -5,12 +5,13 @@ import { mainnet, polygon, arbitrum, optimism, localhost } from 'viem/chains'
 import { alchemyProvider } from 'wagmi/providers/alchemy'
 import { publicProvider } from 'wagmi/providers/public'
 
+const alchemyId = process.env.NEXT_PUBLIC_ALCHEMY_ID
+
 const { chains, publicClient } = configureChains(
   [mainnet, polygon, arbitrum, optimism, localhost],
-  [
-    alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_ID || '' }),
-    publicProvider()
-  ]
+  alchemyId
+    ? [alchemyProvider({ apiKey: alchemyId }), publicProvider()]
+    : [publicProvider()]
 )
 
 const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID
