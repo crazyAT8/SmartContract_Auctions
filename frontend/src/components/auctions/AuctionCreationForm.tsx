@@ -16,6 +16,7 @@ import {
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { ethers } from 'ethers'
+import { apiRequest } from '@/utils/api'
 
 interface AuctionCreationFormProps {
   onSuccess: (auctionId: string) => void
@@ -273,21 +274,24 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
   const handleSubmit = async () => {
     if (!validateForm()) return
 
+    if (!account || !signer) {
+      toast.error('Please connect your wallet to create an auction')
+      return
+    }
+
     setIsSubmitting(true)
     try {
       const auctionData = prepareAuctionData()
 
-      // For now, we'll use regular fetch - authentication can be added later
-      // when the backend auth endpoint is implemented
-      const response = await fetch(`${API_BASE_URL}/auctions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // TODO: Add authentication header when auth is implemented
-          // ...(token && { Authorization: `Bearer ${token}` }),
+      const response = await apiRequest(
+        `${API_BASE_URL}/auctions`,
+        {
+          method: 'POST',
+          body: JSON.stringify(auctionData),
         },
-        body: JSON.stringify(auctionData),
-      })
+        signer,
+        account
+      )
 
       if (!response.ok) {
         const error = await response.json()

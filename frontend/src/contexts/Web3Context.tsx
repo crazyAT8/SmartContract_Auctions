@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { ethers } from 'ethers'
 import toast from 'react-hot-toast'
+import { getAuthToken, clearAuthToken } from '@/utils/api'
 
 interface Web3ContextType {
   account: string | null
@@ -53,11 +54,21 @@ export function Web3Provider({ children }: { children: ReactNode }) {
     }
   }
 
-  const handleAccountsChanged = (accounts: string[]) => {
+  const handleAccountsChanged = async (accounts: string[]) => {
     if (accounts.length === 0) {
       disconnect()
     } else {
+      clearAuthToken()
       setAccount(accounts[0])
+      if (provider) {
+        try {
+          const newSigner = await provider.getSigner()
+          setSigner(newSigner)
+          await getAuthToken(newSigner, accounts[0])
+        } catch (error) {
+          console.error('Error re-authenticating after account change:', error)
+        }
+      }
     }
   }
 
@@ -92,6 +103,8 @@ export function Web3Provider({ children }: { children: ReactNode }) {
       setChainId(Number(network.chainId))
       setIsConnected(true)
 
+      await getAuthToken(signer, accounts[0])
+
       toast.success('Wallet connected successfully')
     } catch (error: any) {
       console.error('Error connecting wallet:', error)
@@ -102,6 +115,7 @@ export function Web3Provider({ children }: { children: ReactNode }) {
   }
 
   const disconnect = () => {
+    clearAuthToken()
     setAccount(null)
     setProvider(null)
     setSigner(null)

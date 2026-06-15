@@ -464,6 +464,7 @@
 8. Socket.IO broadcasts new bid to all connected clients
 
 ### Testing Checklist
+
 - [ ] Backend starts without errors
 - [ ] Frontend builds and runs
 - [ ] Database migrations run successfully
@@ -481,6 +482,7 @@
 ## 🎯 Quick Start for Development
 
 1. **Set up environment**:
+
    ```bash
    # Backend
    cd backend
@@ -504,6 +506,7 @@
    ```
 
 2. **Start services**:
+
    ```bash
    # Terminal 1: Hardhat node
    cd contracts
@@ -523,6 +526,7 @@
    ```
 
 3. **Test the application**:
+
    - Open http://localhost:3000
    - Connect wallet
    - Create an auction

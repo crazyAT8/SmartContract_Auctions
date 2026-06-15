@@ -8,6 +8,7 @@ import { CurrencyDollarIcon, ExclamationTriangleIcon } from '@heroicons/react/24
 import toast from 'react-hot-toast'
 import { ethers } from 'ethers'
 import { getAuctionABI, type AuctionType } from '@/contracts/contracts'
+import { apiRequest } from '@/utils/api'
 
 interface BiddingInterfaceProps {
   auction: {
@@ -251,16 +252,22 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
   }
 
   const placeBidViaAPI = async (amount: string, txHash?: string) => {
-    const response = await fetch(`${API_BASE_URL}/auctions/${auction.id}/bids`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    if (!signer || !account) {
+      throw new Error('Wallet not connected')
+    }
+
+    const response = await apiRequest(
+      `${API_BASE_URL}/auctions/${auction.id}/bids`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          amount: ethers.parseEther(amount).toString(),
+          transactionHash: txHash,
+        }),
       },
-      body: JSON.stringify({
-        amount: ethers.parseEther(amount).toString(),
-        transactionHash: txHash,
-      }),
-    })
+      signer,
+      account
+    )
 
     if (!response.ok) {
       const error = await response.json()
