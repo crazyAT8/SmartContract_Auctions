@@ -271,7 +271,7 @@ router.post('/:id/bids', authenticateUser, validateBid, async (req, res) => {
         auctionId: req.params.id,
         bidderId: req.user.id,
         amount: req.body.amount,
-        transactionHash: req.body.transactionHash,
+        ...(req.body.transactionHash && { transactionHash: req.body.transactionHash }),
         ...(req.body.blindedBid && { blindedBid: req.body.blindedBid }),
         ...(req.body.secret && { secret: req.body.secret }),
         ...(req.body.orderType && { orderType: req.body.orderType }),

@@ -60,7 +60,7 @@ const setupSocketHandlers = (io) => {
     // Handle bid placement
     socket.on('place_bid', async (data) => {
       try {
-        const { auctionId, amount, bidderId } = data;
+        const { auctionId, amount, bidderId, transactionHash } = data;
         
         // Create bid in database
         const bid = await prisma.bid.create({
@@ -68,7 +68,8 @@ const setupSocketHandlers = (io) => {
             auctionId,
             bidderId,
             amount: amount.toString(),
-            status: 'PENDING'
+            status: 'PENDING',
+            ...(transactionHash && { transactionHash })
           },
           include: {
             bidder: {

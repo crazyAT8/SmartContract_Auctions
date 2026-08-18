@@ -15,7 +15,7 @@ Use this list to complete the app. Order follows priority (critical → enhancem
 
 ### Database & bid tracking
 
-- [ ] **Add `transactionHash` to Bid** – Update `backend/prisma/schema.prisma` Bid model; run migration; persist `transactionHash` in `backend/src/routes/auctions.js` when creating bids.
+- [x] **Add `transactionHash` to Bid** – Update `backend/prisma/schema.prisma` Bid model; run migration; persist `transactionHash` in `backend/src/routes/auctions.js` when creating bids.
 - [ ] **Run Prisma setup** – Create DB, set `DATABASE_URL` in `backend/.env`, run `npx prisma migrate dev` and `npx prisma generate`.
 
 ### Contract integration (backend)
