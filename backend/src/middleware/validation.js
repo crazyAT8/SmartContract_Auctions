@@ -67,7 +67,7 @@ const bidSchema = Joi.object({
   orderType: Joi.string().valid('BUY', 'SELL').optional(),
   price: Joi.string().pattern(/^\d+$/).optional(),
   quantity: Joi.string().pattern(/^\d+$/).optional(),
-  transactionHash: Joi.string().optional()
+  transactionHash: Joi.string().pattern(/^0x[a-fA-F0-9]{64}$/).optional()
 });
 
 const validateAuction = (req, res, next) => {

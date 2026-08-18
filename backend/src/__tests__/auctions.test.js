@@ -1,7 +1,12 @@
 const request = require('supertest');
 const express = require('express');
+const jwt = require('jsonwebtoken');
 
 const mockPrisma = {
+  user: {
+    findUnique: jest.fn(),
+    create: jest.fn(),
+  },
   auction: {
     findMany: jest.fn(),
     findUnique: jest.fn(),
@@ -66,9 +71,19 @@ const mockCreator = {
   avatar: mockUser.avatar,
 };
 
+function authHeader() {
+  const token = jwt.sign(
+    { address: mockUser.address, userId: mockUser.id },
+    process.env.JWT_SECRET || 'test-secret-key',
+    { expiresIn: '7d' }
+  );
+  return { Authorization: `Bearer ${token}` };
+}
+
 describe('Auctions API', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockPrisma.user.findUnique.mockResolvedValue(mockUser);
   });
 
   describe('GET /api/auctions', () => {
@@ -150,6 +165,47 @@ describe('Auctions API', () => {
         .post('/api/auctions/auc-1/bids')
         .send({ amount: '1000000000000000000' })
         .expect(401);
+    });
+
+    it('persists transactionHash when placing a bid', async () => {
+      const txHash = '0x' + 'ab'.repeat(32);
+      mockPrisma.auction.findUnique
+        .mockResolvedValueOnce({
+          id: 'auc-1',
+          status: 'ACTIVE',
+          contractAddress: null,
+        })
+        .mockResolvedValueOnce({ totalVolume: '0' });
+      mockPrisma.bid.create.mockResolvedValue({
+        id: 'bid-1',
+        auctionId: 'auc-1',
+        bidderId: mockUser.id,
+        amount: '1000000000000000000',
+        transactionHash: txHash,
+        bidder: mockCreator,
+      });
+      mockPrisma.auction.update.mockResolvedValue({});
+
+      const res = await request(app)
+        .post('/api/auctions/auc-1/bids')
+        .set(authHeader())
+        .send({
+          amount: '1000000000000000000',
+          transactionHash: txHash,
+        })
+        .expect(201);
+
+      expect(mockPrisma.bid.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            auctionId: 'auc-1',
+            bidderId: mockUser.id,
+            amount: '1000000000000000000',
+            transactionHash: txHash,
+          }),
+        })
+      );
+      expect(res.body.transactionHash).toBe(txHash);
     });
   });
 
