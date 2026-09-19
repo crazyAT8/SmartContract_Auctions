@@ -1,104 +1,103 @@
-# Auction DApp – Finish-the-App TODO List
+# Auction DApp – TODO List
 
-Use this list to complete the app. Order follows priority (critical → enhancements). Check off items as you go.
-
----
-
-## Phase 1: Critical Fixes (Must Do First)
-
-### Backend startup & auth
-
-- [ ] **Fix auth middleware** – Ensure `backend/src/middleware/auth.js` has no syntax errors (opening brace in `optionalAuth`); confirm server starts.
-- [ ] **Add `/api/auth/nonce`** – Endpoint that returns a nonce for the wallet to sign.
-- [x] **Add `/api/auth/login`** – Accept `address` + `signature`, verify with ethers, find/create user, issue JWT; wire route in `server.js`.
-- [ ] **Use real auth in frontend** – Replace placeholder token logic in `frontend/src/utils/api.ts` with nonce → sign → login flow.
-
-### Database & bid tracking
-
-- [x] **Add `transactionHash` to Bid** – Update `backend/prisma/schema.prisma` Bid model; run migration; persist `transactionHash` in `backend/src/routes/auctions.js` when creating bids.
-- [ ] **Run Prisma setup** – Create DB, set `DATABASE_URL` in `backend/.env`, run `npx prisma migrate dev` and `npx prisma generate`.
-
-### Contract integration (backend)
-
-- [x] **Export contract ABIs** – Script or copy from `contracts/artifacts` to `contracts/abis/`; make ABIs available to `frontend/src/contracts/abis/` and `backend/src/contracts/abis/`. Use `npm run export-abis` (or `npm run compile:abis`) in `contracts/`.
-- [x] **Contract deployment service** – Implement `backend/src/services/contractDeployment.js` (deploy by auction type using env private key); replace placeholder in `backend/src/routes/auctions.js` (~line 190) with real deployment and save contract address.
-- [ ] **Backend wallet service** – Implement `backend/src/services/walletService.js`; replace "Wallet integration not implemented" in all `place*Bid` handlers in `backend/src/routes/web3.js` with real contract calls using ABIs.
-
-### Contract integration (frontend)
-
-- [ ] **Frontend bidding for all types** – In `frontend/src/components/auctions/BiddingInterface.tsx`, add contract interaction (using ABIs) for all 7 auction types, not just Dutch/English.
-
-### Validation & correctness
-
-- [ ] **Bid validation against contract** – Implement validation in backend (e.g. `contractValidator.js`) and use it in `backend/src/routes/auctions.js` (~line 226) so bids are checked against contract state before persisting.
+Actionable finish-the-app list for the **primary stack**: `frontend/` + `backend/` + `contracts/`.  
+(The root Next.js demo under `app/` / `components/` is legacy and is not the target product.)
 
 ---
 
-## Phase 2: Environment & Deployment
+## Application overview (current)
 
-### Local env and services
+A full-stack Ethereum auction platform with seven auction types, wallet auth, on-chain bidding, and live updates.
 
-- [ ] **Backend `.env`** – Copy `backend/env.example` to `backend/.env`; set `DATABASE_URL`, JWT secret, Redis, RPC URL, `PRIVATE_KEY` for deployment/bidding.
-- [ ] **Frontend `.env.local`** – Add `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`, `NEXT_PUBLIC_ALCHEMY_ID` (or similar).
-- [ ] **Contracts `.env`** – Copy `contracts/env.example` to `contracts/.env`; set network and keys.
-- [ ] **Redis** – Install/start Redis; add connection settings to `backend/.env`; confirm backend connects.
+| Layer | Stack | Role |
+|-------|--------|------|
+| **Frontend** (`frontend/`) | Next.js 14, React 18, TypeScript, Tailwind, Framer Motion, ethers v6, Socket.IO, React Query | UI, MetaMask wallet, contract txs |
+| **Backend** (`backend/`) | Express, Prisma + PostgreSQL, Redis, Socket.IO, JWT, ethers | REST API, deploy-on-start, end processing, validation |
+| **Contracts** (`contracts/`) | Hardhat, Solidity, OpenZeppelin | 7 auction contracts + ERC20 mock |
 
-### Blockchain and contracts
+**Working today**
 
-- [ ] **Local chain** – Run Hardhat node (`npx hardhat node` in `contracts`); deploy with `npx hardhat run scripts/deploy.js --network localhost`.
-- [ ] **Deployment output** – Ensure `contracts/deployments.json` (or equivalent) exists and backend reads contract addresses from config (e.g. `backend/src/routes/web3.js`).
+- Wallet SIWE-style auth: `/api/auth/nonce`, `/login`, `/me`, `/logout` + JWT on protected routes
+- Auction CRUD, filters, create/start; start deploys via `contractDeployment` service
+- On-chain bidding for all 7 types (frontend `BiddingInterface` + backend wallet / web3 routes)
+- Bid validation against contract state; `Bid.transactionHash` persisted
+- Sealed-bid reveal (API + UI); auction end cron (`auctionEndProcessor`)
+- In-app notifications + Socket.IO rooms; env files and Prisma migrations in place
+- Route/unit tests for backend auth/auctions/web3, some frontend components, contract tests (6 of 7 types)
 
----
+**Not in scope / not built**
 
-## Phase 3: Missing Features
+- Admin UI, fiat payments, email/push notifications
+- OpenAPI/Swagger, React error boundaries
+- Full E2E coverage; HoldToCompete contract tests still thin
 
-- [ ] **Sealed bid reveal** – Backend endpoint + frontend UI + contract flow for reveal phase; test full sealed-bid lifecycle.
-- [ ] **Auction end processing** – Cron or scheduler (e.g. `backend/src/services/auctionScheduler.js`) to detect ended auctions, update status, determine winners, optionally trigger payouts.
-- [ ] **Bid validation** – Already listed in Phase 1; ensure it’s wired and tested.
+**Ops gotchas (local)**
 
----
+1. Run `npm run compile:artifacts` in `contracts/` — `backend/src/contracts/artifacts/` is required for deploy-on-start
+2. `GET /api/web3/contracts` looks for `backend/contracts/deployments.json`; real file is repo-root `contracts/deployments.json` (path mismatch)
+3. Prefer `frontend/` over the root Wagmi/RainbowKit demo
 
-## Phase 4: Reliability & UX
-
-- [ ] **React error boundaries** – Add error boundaries so one component failure doesn’t crash the whole app.
-- [ ] **Loading states** – Add loading/disabled states for all async actions (create auction, place bid, auth, etc.).
-- [ ] **Retry/feedback** – Clear error toasts and optional retry for failed tx/API calls.
-
----
-
-## Phase 5: Testing
-
-- [ ] **Backend tests** – Implement tests for auth, auctions, web3 routes (e.g. Jest); run `npm test` in `backend`.
-- [ ] **Contract tests** – Tests for all 7 auction types in `contracts/test/`; run Hardhat tests.
-- [ ] **Frontend tests** – Component/unit tests for critical flows (e.g. BiddingInterface, AuctionCreationForm); run frontend test script.
-- [ ] **Integration** – Manually or via E2E: create auction → start (deploy) → bid → end; verify for at least Dutch and English, then others.
+See also: `ISSUES_AND_TODO.md`, `QUICK_TEST.md`, `TESTING_GUIDE.md`, `backend/SETUP_GUIDE.md`.
 
 ---
 
-## Phase 6: Documentation & Deploy Prep
+## Done (Phase 1–3)
 
-- [ ] **API docs** – Add Swagger/OpenAPI for backend routes; document auth, auctions, web3.
-- [ ] **Production env** – Production `DATABASE_URL`, Redis, RPC, contract addresses; no dev keys in prod.
-- [ ] **Build & run** – `npm run build` for frontend; run backend and frontend in prod mode; smoke test.
-- [ ] **Docker** – Ensure `docker-compose` includes DB, Redis, backend, frontend (and optionally chain); test `docker-compose up`.
-
----
-
-## Phase 7: Enhancements (Optional)
-
-- [ ] **Notifications** – Email/push (e.g. SendGrid/SES) for auction and bid events; hook into existing notification model.
-- [ ] **TypeScript** – Replace remaining `any` types in frontend with proper types.
-- [ ] **Security** – Smart contract review, API auth checks, and frontend best practices (no secrets in client).
+- [x] Fix auth middleware; implement auth endpoints; wire frontend nonce → sign → login
+- [x] Add `Bid.transactionHash`; Prisma migrate; persist on bid create
+- [x] Export/wire ABIs; contract deployment service; backend wallet `place*Bid`
+- [x] Frontend contract bidding for all 7 auction types
+- [x] Bid validation against contract (`bidValidationService` / `contractValidator`)
+- [x] Env files (`backend/.env`, `frontend/.env.local`, `contracts/.env`)
+- [x] Sealed bid reveal; auction end processing cron
+- [x] Baseline tests (backend routes, frontend components, most contract types)
 
 ---
 
-## Quick reference – run order for local dev
+## Remaining work
 
-1. Backend: `cd backend && npm install && npx prisma migrate dev && npx prisma generate && npm run dev`
-2. Contracts: `cd contracts && npm run compile` (then `npm run export-abis` to sync ABIs to frontend/backend). For local chain: `npx hardhat node` (separate terminal), then `npx hardhat run scripts/deploy.js --network localhost`
-3. Frontend: `cd frontend && npm install && npm run dev`
-4. Browser: http://localhost:3000 → connect wallet → create auction → place bid
+### Ops & wiring (do next)
+
+- [ ] **Compile artifacts for backend** – `cd contracts && npm run compile:artifacts` so deploy-on-start finds bytecode under `backend/src/contracts/artifacts/`
+- [ ] **Fix deployments path** – Point `backend/src/routes/web3.js` at repo-root `contracts/deployments.json` (or copy/symlink into the path it reads)
+- [ ] **Local chain smoke** – Hardhat node → deploy → create/start auction → bid → end; confirm addresses resolve
+
+### Quality & UX
+
+- [ ] **API docs** – Swagger/OpenAPI for auth, auctions, users, web3
+- [ ] **React error boundaries** – Prevent full-app crash on component failures
+- [ ] **Tighten TypeScript** – Replace remaining `any` in `frontend/src/`
+- [ ] **Loading / retry** – Fill gaps on async actions; clear toasts + optional retry for failed tx/API calls
+- [ ] **Socket vs REST bids** – Align live updates: REST bid path should emit Socket.IO events; socket `place_bid` should match REST auth/validation strength
+
+### Testing
+
+- [ ] **HoldToCompete contract tests** – Cover in `contracts/test/`
+- [ ] **Deeper frontend tests** – BiddingInterface, AuctionCreationForm, sealed reveal
+- [ ] **Integration / E2E** – Create → start (deploy) → bid → end for at least Dutch + English, then others
+
+### Docs & deploy prep
+
+- [ ] **Production env** – Prod DB, Redis, RPC, contract addresses; no dev keys in prod
+- [ ] **Build & smoke** – Frontend build + prod-mode backend/frontend
+- [ ] **Docker** – Verify `docker-compose` (DB, Redis, backend, frontend; optional chain)
+- [ ] **Clarify README** – Document `frontend/` + Express as the primary app (root demo is legacy)
+
+### Optional enhancements
+
+- [ ] **Email/push notifications** – Hook into existing notification model (SendGrid/SES or similar)
+- [ ] **Admin tooling** – Moderate auctions / users if needed
+- [ ] **Security review** – Contracts + API auth checks + no secrets in client
 
 ---
 
-*Based on `APPLICATION_STATUS.md`. Update this file as you complete items.*
+## Quick reference – local run order
+
+1. **Backend:** `cd backend && npm install && npx prisma migrate dev && npx prisma generate && npm run dev`
+2. **Contracts:** `cd contracts && npm run compile && npm run compile:artifacts` (and `npm run export-abis` / compile abis if needed). Local chain: `npx hardhat node`, then `npx hardhat run scripts/deploy.js --network localhost`
+3. **Frontend:** `cd frontend && npm install && npm run dev`
+4. **Browser:** http://localhost:3000 → connect wallet → create auction → place bid
+
+---
+
+*Last updated: 2026-09-18. Keep in sync with `ISSUES_AND_TODO.md`.*

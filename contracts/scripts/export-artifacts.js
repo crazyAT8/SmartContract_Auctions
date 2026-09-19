@@ -8,7 +8,8 @@ const fs = require('fs');
 const path = require('path');
 
 const CONTRACTS_DIR = path.join(__dirname, '..');
-const ARTIFACTS_DIR = path.join(CONTRACTS_DIR, 'artifacts', 'contracts');
+// Hardhat paths.sources is "./src", so compiled artifacts land under artifacts/src/
+const ARTIFACTS_DIR = path.join(CONTRACTS_DIR, 'artifacts', 'src');
 const BACKEND_ARTIFACTS = path.join(CONTRACTS_DIR, '..', 'backend', 'src', 'contracts', 'artifacts');
 
 const CONTRACT_NAMES = [

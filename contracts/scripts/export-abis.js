@@ -8,7 +8,8 @@ const fs = require('fs');
 const path = require('path');
 
 const CONTRACTS_DIR = path.join(__dirname, '..');
-const ARTIFACTS_DIR = path.join(CONTRACTS_DIR, 'artifacts', 'contracts');
+// Hardhat paths.sources is "./src", so compiled artifacts land under artifacts/src/
+const ARTIFACTS_DIR = path.join(CONTRACTS_DIR, 'artifacts', 'src');
 const OUT_ABIS = path.join(CONTRACTS_DIR, 'abis');
 const FRONTEND_ABIS = path.join(CONTRACTS_DIR, '..', 'frontend', 'src', 'contracts', 'abis');
 const BACKEND_ABIS = path.join(CONTRACTS_DIR, '..', 'backend', 'src', 'contracts', 'abis');
@@ -33,8 +34,9 @@ function ensureDir(dir) {
 
 function findArtifactPath(name) {
   const candidates = [
-    path.join(ARTIFACTS_DIR, `${name}.sol`, `${name}.json'),
-    path.join(ARTIFACTS_DIR, 'contracts', `${name}.sol`, `${name}.json'),
+    path.join(ARTIFACTS_DIR, `${name}.sol`, `${name}.json`),
+    // Fallback for older layouts
+    path.join(CONTRACTS_DIR, 'artifacts', 'contracts', `${name}.sol`, `${name}.json`),
   ];
   for (const p of candidates) {
     if (fs.existsSync(p)) return p;
