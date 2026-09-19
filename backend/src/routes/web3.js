@@ -14,7 +14,7 @@ router.get('/contracts', async (req, res) => {
 
     let contractAddresses = {};
     try {
-      const deploymentsPath = path.join(__dirname, '../../contracts/deployments.json');
+      const deploymentsPath = path.join(__dirname, '../../../contracts/deployments.json');
       const deployments = JSON.parse(fs.readFileSync(deploymentsPath, 'utf8'));
       contractAddresses = deployments.contracts;
     } catch (error) {

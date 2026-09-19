@@ -34,7 +34,7 @@ A full-stack Ethereum auction platform with seven auction types, wallet auth, on
 **Ops gotchas (local)**
 
 1. Run `npm run compile:artifacts` in `contracts/` — `backend/src/contracts/artifacts/` is required for deploy-on-start
-2. `GET /api/web3/contracts` looks for `backend/contracts/deployments.json`; real file is repo-root `contracts/deployments.json` (path mismatch)
+2. `GET /api/web3/contracts` reads repo-root `contracts/deployments.json`
 3. Prefer `frontend/` over the root Wagmi/RainbowKit demo
 
 See also: `ISSUES_AND_TODO.md`, `QUICK_TEST.md`, `TESTING_GUIDE.md`, `backend/SETUP_GUIDE.md`.
@@ -59,7 +59,7 @@ See also: `ISSUES_AND_TODO.md`, `QUICK_TEST.md`, `TESTING_GUIDE.md`, `backend/SE
 ### Ops & wiring (do next)
 
 - [ ] **Compile artifacts for backend** – `cd contracts && npm run compile:artifacts` so deploy-on-start finds bytecode under `backend/src/contracts/artifacts/`
-- [ ] **Fix deployments path** – Point `backend/src/routes/web3.js` at repo-root `contracts/deployments.json` (or copy/symlink into the path it reads)
+- [x] **Fix deployments path** – Point `backend/src/routes/web3.js` at repo-root `contracts/deployments.json`
 - [ ] **Local chain smoke** – Hardhat node → deploy → create/start auction → bid → end; confirm addresses resolve
 
 ### Quality & UX
