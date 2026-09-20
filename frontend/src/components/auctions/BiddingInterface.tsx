@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useWeb3 } from '@/contexts/Web3Context'
-import { useSocket } from '@/contexts/SocketContext'
 import { formatEther } from '@/utils/formatting'
 import { CurrencyDollarIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
@@ -47,7 +46,6 @@ function storeSealedBidForReveal(auctionId: string, account: string, valueWei: s
 
 export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInterfaceProps) {
   const { isConnected, account, signer, provider } = useWeb3()
-  const { placeBid } = useSocket()
   const [bidAmount, setBidAmount] = useState('')
   const [isPlacingBid, setIsPlacingBid] = useState(false)
   const [balance, setBalance] = useState('0')
@@ -289,14 +287,7 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
       const error = await response.json()
       throw new Error(error.error || 'Failed to place bid')
     }
-
-    if (account) {
-      placeBid({
-        auctionId: auction.id,
-        amount,
-        bidderId: account,
-      })
-    }
+    // Live updates: REST path emits Socket.IO `new_bid` server-side (no client re-emit)
   }
 
   const minBid = getMinBid()

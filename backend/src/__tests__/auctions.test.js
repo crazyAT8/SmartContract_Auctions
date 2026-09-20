@@ -19,6 +19,9 @@ const mockPrisma = {
     findMany: jest.fn(),
     count: jest.fn(),
   },
+  notification: {
+    create: jest.fn(),
+  },
 };
 
 const mockRedis = {
@@ -46,6 +49,15 @@ jest.mock('../services/contractDeployment', () => ({
 
 jest.mock('../services/bidValidationService', () => ({
   validateBidAgainstContract: jest.fn().mockResolvedValue({ valid: true }),
+}));
+
+const mockBroadcastNewBid = jest.fn();
+const mockBroadcastUserNotification = jest.fn();
+
+jest.mock('../services/socketService', () => ({
+  setupSocketHandlers: jest.fn(),
+  broadcastNewBid: (...args) => mockBroadcastNewBid(...args),
+  broadcastUserNotification: (...args) => mockBroadcastUserNotification(...args),
 }));
 
 const auctionRoutes = require('../routes/auctions');
@@ -174,8 +186,14 @@ describe('Auctions API', () => {
           id: 'auc-1',
           status: 'ACTIVE',
           contractAddress: null,
+          creatorId: 'creator-1',
+          title: 'Test',
         })
-        .mockResolvedValueOnce({ totalVolume: '0' });
+        .mockResolvedValueOnce({
+          totalVolume: '0',
+          creatorId: 'creator-1',
+          title: 'Test',
+        });
       mockPrisma.bid.create.mockResolvedValue({
         id: 'bid-1',
         auctionId: 'auc-1',
@@ -185,6 +203,7 @@ describe('Auctions API', () => {
         bidder: mockCreator,
       });
       mockPrisma.auction.update.mockResolvedValue({});
+      mockPrisma.notification.create.mockResolvedValue({});
 
       const res = await request(app)
         .post('/api/auctions/auc-1/bids')
@@ -206,6 +225,14 @@ describe('Auctions API', () => {
         })
       );
       expect(res.body.transactionHash).toBe(txHash);
+      expect(mockBroadcastNewBid).toHaveBeenCalledWith(
+        'auc-1',
+        expect.objectContaining({ id: 'bid-1', transactionHash: txHash })
+      );
+      expect(mockBroadcastUserNotification).toHaveBeenCalledWith(
+        'creator-1',
+        expect.objectContaining({ type: 'BID_PLACED' })
+      );
     });
   });
 

@@ -53,8 +53,8 @@
 | 14 | ~~Sealed bid reveal incomplete~~ | Frontend + backend | Resolved: reveal endpoint + UI + contract reveal. |
 | 15 | ~~No auction end processing~~ | `auctionEndProcessor.js` | Resolved: cron marks ENDED and runs winner/payout hooks. |
 | 16 | **Notifications incomplete** | Backend | In-app + socket only; no email/push. |
-| 17 | **REST bids skip Socket.IO emit** | Auctions vs socket | Live UI may miss updates for REST-only bid path. |
-| 18 | **Socket `place_bid` weaker than REST** | `socketService` | Less auth/contract validation than HTTP bid route. |
+| 17 | ~~**REST bids skip Socket.IO emit**~~ | Auctions vs socket | Resolved: shared `bidService` emits `new_bid` + creator notification after REST/socket place. |
+| 18 | ~~**Socket `place_bid` weaker than REST**~~ | `socketService` | Resolved: JWT auth, same Joi + contract validation via `bidService`; ignores client `bidderId`. |
 
 ### Low priority / enhancements
 
@@ -96,7 +96,7 @@
 - [x] **Sealed bid reveal** – Backend + frontend + contract.
 - [x] **Auction end processing** – Cron / `auctionEndProcessor`.
 - [x] **Bid validation against contract** – Shared read/validation services.
-- [ ] **Align Socket.IO with REST bids** – Emit on REST path; harden socket bid path.
+- [x] **Align Socket.IO with REST bids** – Emit on REST path; harden socket bid path.
 
 ### Phase 4 – Quality & docs
 
@@ -111,4 +111,4 @@
 
 ---
 
-*Source: codebase review vs prior APPLICATION_STATUS / TODO docs. Last updated: 2026-09-19.*
+*Source: codebase review vs prior APPLICATION_STATUS / TODO docs. Last updated: 2026-09-20.*

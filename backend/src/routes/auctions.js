@@ -5,7 +5,7 @@ const { authenticateUser } = require('../middleware/auth');
 const { logger } = require('../utils/logger');
 const { getRedis } = require('../config/redis');
 const { deployAuctionContract, isDeploymentConfigured } = require('../services/contractDeployment');
-const { validateBidAgainstContract } = require('../services/bidValidationService');
+const { placeBid, BidPlacementError } = require('../services/bidService');
 
 const router = express.Router();
 
@@ -239,69 +239,22 @@ router.post('/:id/start', authenticateUser, async (req, res) => {
   }
 });
 
-// Place bid
+// Place bid (shared service also emits Socket.IO new_bid + creator notification)
 router.post('/:id/bids', authenticateUser, validateBid, async (req, res) => {
   try {
-    const auction = await prisma.auction.findUnique({
-      where: { id: req.params.id }
+    const bid = await placeBid({
+      auctionId: req.params.id,
+      bidderId: req.user.id,
+      payload: req.body
     });
-
-    if (!auction) {
-      return res.status(404).json({ error: 'Auction not found' });
-    }
-
-    if (auction.status !== 'ACTIVE') {
-      return res.status(400).json({ error: 'Auction is not active' });
-    }
-
-    // Validate bid against contract state before persisting (contractValidator)
-    if (auction.contractAddress) {
-      const validation = await validateBidAgainstContract(auction, req.body.amount, {
-        orderType: req.body.orderType,
-        price: req.body.price,
-        quantity: req.body.quantity
-      });
-      if (!validation.valid) {
-        return res.status(400).json({ error: validation.error || 'Bid validation failed' });
-      }
-    }
-
-    const bid = await prisma.bid.create({
-      data: {
-        auctionId: req.params.id,
-        bidderId: req.user.id,
-        amount: req.body.amount,
-        ...(req.body.transactionHash && { transactionHash: req.body.transactionHash }),
-        ...(req.body.blindedBid && { blindedBid: req.body.blindedBid }),
-        ...(req.body.secret && { secret: req.body.secret }),
-        ...(req.body.orderType && { orderType: req.body.orderType }),
-        ...(req.body.price && { price: req.body.price }),
-        ...(req.body.quantity && { quantity: req.body.quantity })
-      },
-      include: {
-        bidder: {
-          select: { id: true, address: true, username: true, avatar: true }
-        }
-      }
-    });
-
-    // Update auction stats (totalVolume is String, so add manually)
-    const current = await prisma.auction.findUnique({
-      where: { id: req.params.id },
-      select: { totalVolume: true }
-    });
-    const newVolume = (BigInt(current?.totalVolume ?? '0') + BigInt(req.body.amount)).toString();
-    await prisma.auction.update({
-      where: { id: req.params.id },
-      data: {
-        totalBids: { increment: 1 },
-        totalVolume: newVolume
-      }
-    });
-
-    logger.info(`Bid placed: ${bid.id} for auction ${req.params.id} by ${req.user.address}`);
     res.status(201).json(bid);
   } catch (error) {
+    if (error instanceof BidPlacementError || error.name === 'BidPlacementError') {
+      return res.status(error.status).json({
+        error: error.message,
+        ...(error.details && { details: error.details })
+      });
+    }
     logger.error('Error placing bid:', error);
     res.status(500).json({ error: 'Failed to place bid' });
   }

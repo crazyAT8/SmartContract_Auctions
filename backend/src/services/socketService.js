@@ -1,7 +1,44 @@
 const { logger } = require('../utils/logger');
 const { prisma } = require('../config/database');
+const { resolveUserFromToken } = require('../middleware/auth');
+
+/** @type {import('socket.io').Server | null} */
+let ioRef = null;
+
+function broadcastNewBid(auctionId, bid) {
+  if (!ioRef) return;
+  ioRef.to(`auction_${auctionId}`).emit('new_bid', bid);
+}
+
+function broadcastUserNotification(userId, notification) {
+  if (!ioRef) return;
+  ioRef.to(`user_${userId}`).emit('notification', notification);
+}
+
+/**
+ * Authenticate socket from handshake.auth.token (optional — rooms stay public).
+ * place_bid still requires a resolved user (handshake or per-event token).
+ */
+async function authenticateSocket(socket, next) {
+  try {
+    const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.replace(/^Bearer\s+/i, '');
+    if (token) {
+      socket.user = await resolveUserFromToken(token, { createIfMissing: true });
+    } else {
+      socket.user = null;
+    }
+    next();
+  } catch (error) {
+    logger.warn('Socket auth failed:', error.message);
+    socket.user = null;
+    next();
+  }
+}
 
 const setupSocketHandlers = (io) => {
+  ioRef = io;
+  io.use(authenticateSocket);
+
   io.on('connection', (socket) => {
     logger.info(`Client connected: ${socket.id}`);
 
@@ -45,8 +82,16 @@ const setupSocketHandlers = (io) => {
       logger.info(`Client ${socket.id} left auction ${auctionId}`);
     });
 
-    // Join user room for notifications
+    // Join user room for notifications (must be authenticated as that user)
     socket.on('join_user', (userId) => {
+      if (!socket.user) {
+        socket.emit('error', { message: 'Authentication required' });
+        return;
+      }
+      if (socket.user.id !== userId) {
+        socket.emit('error', { message: 'Cannot join another user room' });
+        return;
+      }
       socket.join(`user_${userId}`);
       logger.info(`Client ${socket.id} joined user room ${userId}`);
     });
@@ -57,64 +102,49 @@ const setupSocketHandlers = (io) => {
       logger.info(`Client ${socket.id} left user room ${userId}`);
     });
 
-    // Handle bid placement
+    // Handle bid placement — same auth/validation strength as REST
     socket.on('place_bid', async (data) => {
       try {
-        const { auctionId, amount, bidderId, transactionHash } = data;
-        
-        // Create bid in database
-        const bid = await prisma.bid.create({
-          data: {
-            auctionId,
-            bidderId,
-            amount: amount.toString(),
-            status: 'PENDING',
-            ...(transactionHash && { transactionHash })
-          },
-          include: {
-            bidder: {
-              select: { id: true, address: true, username: true, avatar: true }
-            }
+        const { placeBid } = require('./bidService');
+
+        let user = socket.user;
+        if (!user && data?.token) {
+          try {
+            user = await resolveUserFromToken(data.token, { createIfMissing: true });
+            socket.user = user;
+          } catch (authErr) {
+            socket.emit('bid_error', { message: 'Invalid or expired token' });
+            return;
           }
-        });
-
-        // Update auction stats
-        await prisma.auction.update({
-          where: { id: auctionId },
-          data: {
-            totalBids: { increment: 1 },
-            totalVolume: { increment: amount.toString() }
-          }
-        });
-
-        // Broadcast bid to auction room
-        io.to(`auction_${auctionId}`).emit('new_bid', bid);
-        
-        // Send notification to auction creator
-        const auction = await prisma.auction.findUnique({
-          where: { id: auctionId },
-          select: { creatorId: true, title: true }
-        });
-
-        if (auction) {
-          await prisma.notification.create({
-            data: {
-              userId: auction.creatorId,
-              title: 'New Bid Placed',
-              message: `A new bid of ${amount} ETH was placed on "${auction.title}"`,
-              type: 'BID_PLACED'
-            }
-          });
-
-          io.to(`user_${auction.creatorId}`).emit('notification', {
-            title: 'New Bid Placed',
-            message: `A new bid of ${amount} ETH was placed on "${auction.title}"`,
-            type: 'BID_PLACED'
-          });
         }
 
-        logger.info(`Bid placed: ${bid.id} for auction ${auctionId}`);
+        if (!user) {
+          socket.emit('bid_error', { message: 'Authentication required' });
+          return;
+        }
+
+        const auctionId = data?.auctionId;
+        if (!auctionId || typeof auctionId !== 'string') {
+          socket.emit('bid_error', { message: 'auctionId is required' });
+          return;
+        }
+
+        // Ignore client-supplied bidderId — always use authenticated user
+        const { auctionId: _a, bidderId: _b, token: _t, ...payload } = data || {};
+
+        await placeBid({
+          auctionId,
+          bidderId: user.id,
+          payload
+        });
       } catch (error) {
+        if (error.name === 'BidPlacementError') {
+          socket.emit('bid_error', {
+            message: error.message,
+            details: error.details
+          });
+          return;
+        }
         logger.error('Error placing bid:', error);
         socket.emit('bid_error', { message: 'Failed to place bid' });
       }
@@ -164,15 +194,15 @@ const setupSocketHandlers = (io) => {
     });
   };
 
-  // Broadcast user notification
-  const broadcastUserNotification = (userId, notification) => {
-    io.to(`user_${userId}`).emit('notification', notification);
-  };
-
   return {
     broadcastAuctionEvent,
-    broadcastUserNotification
+    broadcastUserNotification,
+    broadcastNewBid
   };
 };
 
-module.exports = { setupSocketHandlers };
+module.exports = {
+  setupSocketHandlers,
+  broadcastNewBid,
+  broadcastUserNotification
+};

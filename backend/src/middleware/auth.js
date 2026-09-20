@@ -1,6 +1,9 @@
 const jwt = require('jsonwebtoken');
-const { prisma } = require('../config/database');
 const { logger } = require('../utils/logger');
+const { prisma } = require('../config/database');
+
+/** @type {import('socket.io').Server | null} */
+let ioRef = null;
 
 function getJwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -8,6 +11,42 @@ function getJwtSecret() {
     logger.warn('JWT_SECRET is not set; authentication will fail');
   }
   return secret;
+}
+
+/**
+ * Resolve a Prisma user from a JWT (shared by HTTP auth and Socket.IO).
+ * @param {string} token
+ * @param {{ createIfMissing?: boolean }} [options]
+ * @returns {Promise<object|null>}
+ */
+async function resolveUserFromToken(token, options = {}) {
+  const { createIfMissing = false } = options;
+  if (!token || typeof token !== 'string') {
+    return null;
+  }
+
+  const secret = getJwtSecret();
+  if (!secret) {
+    return null;
+  }
+
+  const decoded = jwt.verify(token, secret);
+
+  let user = await prisma.user.findUnique({
+    where: { address: decoded.address }
+  });
+
+  if (!user && createIfMissing) {
+    user = await prisma.user.create({
+      data: {
+        address: decoded.address,
+        username: decoded.username || null,
+        email: decoded.email || null
+      }
+    });
+  }
+
+  return user;
 }
 
 const authenticateUser = async (req, res, next) => {
@@ -28,22 +67,9 @@ const authenticateUser = async (req, res, next) => {
       return res.status(401).json({ error: 'No token provided' });
     }
 
-    const decoded = jwt.verify(token, secret);
-    
-    // Find or create user
-    let user = await prisma.user.findUnique({
-      where: { address: decoded.address }
-    });
-
+    const user = await resolveUserFromToken(token, { createIfMissing: true });
     if (!user) {
-      // Create new user if they don't exist
-      user = await prisma.user.create({
-        data: {
-          address: decoded.address,
-          username: decoded.username || null,
-          email: decoded.email || null
-        }
-      });
+      return res.status(401).json({ error: 'Invalid token' });
     }
 
     req.user = user;
@@ -84,12 +110,7 @@ const optionalAuth = async (req, res, next) => {
       return next();
     }
 
-    const decoded = jwt.verify(token, secret);
-    
-    const user = await prisma.user.findUnique({
-      where: { address: decoded.address }
-    });
-
+    const user = await resolveUserFromToken(token, { createIfMissing: false });
     req.user = user;
     next();
   } catch (error) {
@@ -101,5 +122,6 @@ const optionalAuth = async (req, res, next) => {
 
 module.exports = {
   authenticateUser,
-  optionalAuth
+  optionalAuth,
+  resolveUserFromToken
 };

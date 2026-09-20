@@ -3,6 +3,18 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { io, Socket } from 'socket.io-client'
 import toast from 'react-hot-toast'
+import { getStoredAuthToken } from '@/utils/api'
+
+interface PlaceBidPayload {
+  auctionId: string
+  amount: string
+  transactionHash?: string
+  blindedBid?: string
+  secret?: string
+  orderType?: 'BUY' | 'SELL'
+  price?: string
+  quantity?: string
+}
 
 interface SocketContextType {
   socket: Socket | null
@@ -11,7 +23,7 @@ interface SocketContextType {
   leaveAuction: (auctionId: string) => void
   joinUser: (userId: string) => void
   leaveUser: (userId: string) => void
-  placeBid: (data: { auctionId: string; amount: string; bidderId: string }) => void
+  placeBid: (data: PlaceBidPayload) => void
   updateAuctionState: (auctionId: string) => void
 }
 
@@ -23,11 +35,13 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const socketUrl = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:3001'
+    const token = getStoredAuthToken()
     const newSocket = io(socketUrl, {
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
+      auth: token ? { token } : {},
     })
 
     newSocket.on('connect', () => {
@@ -105,9 +119,11 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const placeBid = (data: { auctionId: string; amount: string; bidderId: string }) => {
+  const placeBid = (data: PlaceBidPayload) => {
     if (socket) {
-      socket.emit('place_bid', data)
+      const token = getStoredAuthToken()
+      // Server ignores any client bidderId; JWT identifies the bidder
+      socket.emit('place_bid', { ...data, ...(token ? { token } : {}) })
     }
   }
 
