@@ -72,7 +72,7 @@ See also: `ISSUES_AND_TODO.md`, `QUICK_TEST.md`, `TESTING_GUIDE.md`, `backend/SE
 ### Testing
 
 - [x] **HoldToCompete contract tests** – Cover in `contracts/test/`
-- [ ] **Deeper frontend tests** – BiddingInterface, AuctionCreationForm, sealed reveal
+- [x] **Deeper frontend tests** – BiddingInterface, AuctionCreationForm, sealed reveal
 - [ ] **Integration / E2E** – Create → start (deploy) → bid → end for at least Dutch + English, then others
 
 ### Docs & deploy prep

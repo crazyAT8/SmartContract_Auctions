@@ -101,7 +101,7 @@
 ### Phase 4 – Quality & docs
 
 - [x] **Write baseline tests** – Backend routes, frontend components, most contract types.
-- [ ] **Expand tests** – BiddingInterface, E2E happy path. (HoldToCompete contract tests done)
+- [x] **Expand tests** – BiddingInterface, AuctionCreationForm, SealedBidReveal. (E2E still open; HoldToCompete contract tests done)
 - [ ] **Add API documentation** – Swagger/OpenAPI.
 - [ ] **Add error boundaries** – React error boundaries in frontend.
 - [ ] **Tighten TypeScript** – Replace remaining `any`.
