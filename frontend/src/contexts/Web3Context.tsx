@@ -5,6 +5,26 @@ import { ethers } from 'ethers'
 import toast from 'react-hot-toast'
 import { getAuthToken, clearAuthToken } from '@/utils/api'
 
+/** EIP-3085 wallet_addEthereumChain params */
+interface AddEthereumChainParameter {
+  chainId: string
+  chainName: string
+  rpcUrls: string[]
+  nativeCurrency: {
+    name: string
+    symbol: string
+    decimals: number
+  }
+  blockExplorerUrls?: string[]
+}
+
+/** MetaMask / EIP-1193 provider with event subscriptions */
+type EthereumProvider = ethers.Eip1193Provider & {
+  on(event: 'accountsChanged', listener: (accounts: string[]) => void): void
+  on(event: 'chainChanged', listener: (chainId: string) => void): void
+  on(event: 'disconnect', listener: () => void): void
+}
+
 interface Web3ContextType {
   account: string | null
   provider: ethers.BrowserProvider | null
@@ -16,6 +36,23 @@ interface Web3ContextType {
   disconnect: () => void
   switchNetwork: (chainId: number) => Promise<void>
   getBalance: () => Promise<string>
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const message = (error as { message: unknown }).message
+    if (typeof message === 'string' && message) return message
+  }
+  return fallback
+}
+
+function getErrorCode(error: unknown): number | undefined {
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    const code = (error as { code: unknown }).code
+    if (typeof code === 'number') return code
+  }
+  return undefined
 }
 
 const Web3Context = createContext<Web3ContextType | undefined>(undefined)
@@ -36,7 +73,9 @@ export function Web3Provider({ children }: { children: ReactNode }) {
   const checkConnection = async () => {
     if (typeof window.ethereum !== 'undefined') {
       try {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+        const accounts = (await window.ethereum.request({
+          method: 'eth_accounts',
+        })) as string[]
         if (accounts.length > 0) {
           await connect()
         }
@@ -89,9 +128,9 @@ export function Web3Provider({ children }: { children: ReactNode }) {
 
     setIsConnecting(true)
     try {
-      const accounts = await window.ethereum.request({
-        method: 'eth_requestAccounts'
-      })
+      const accounts = (await window.ethereum.request({
+        method: 'eth_requestAccounts',
+      })) as string[]
 
       const provider = new ethers.BrowserProvider(window.ethereum)
       const signer = await provider.getSigner()
@@ -106,9 +145,9 @@ export function Web3Provider({ children }: { children: ReactNode }) {
       await getAuthToken(signer, accounts[0])
 
       toast.success('Wallet connected successfully')
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error connecting wallet:', error)
-      toast.error(error.message || 'Failed to connect wallet')
+      toast.error(getErrorMessage(error, 'Failed to connect wallet'))
     } finally {
       setIsConnecting(false)
     }
@@ -133,15 +172,15 @@ export function Web3Provider({ children }: { children: ReactNode }) {
     try {
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: `0x${targetChainId.toString(16)}` }]
+        params: [{ chainId: `0x${targetChainId.toString(16)}` }],
       })
-    } catch (error: any) {
-      if (error.code === 4902) {
+    } catch (error: unknown) {
+      if (getErrorCode(error) === 4902) {
         // Chain not added, try to add it
         try {
           await window.ethereum.request({
             method: 'wallet_addEthereumChain',
-            params: [getNetworkConfig(targetChainId)]
+            params: [getNetworkConfig(targetChainId)],
           })
         } catch (addError) {
           console.error('Error adding network:', addError)
@@ -166,31 +205,31 @@ export function Web3Provider({ children }: { children: ReactNode }) {
     }
   }
 
-  const getNetworkConfig = (chainId: number) => {
-    const networks: Record<number, any> = {
+  const getNetworkConfig = (chainId: number): AddEthereumChainParameter => {
+    const networks: Record<number, AddEthereumChainParameter> = {
       1: {
         chainId: '0x1',
         chainName: 'Ethereum Mainnet',
         rpcUrls: ['https://mainnet.infura.io/v3/YOUR_INFURA_KEY'],
         nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-        blockExplorerUrls: ['https://etherscan.io']
+        blockExplorerUrls: ['https://etherscan.io'],
       },
       11155111: {
         chainId: '0xaa36a7',
         chainName: 'Sepolia Testnet',
         rpcUrls: ['https://sepolia.infura.io/v3/YOUR_INFURA_KEY'],
         nativeCurrency: { name: 'SepoliaETH', symbol: 'SepoliaETH', decimals: 18 },
-        blockExplorerUrls: ['https://sepolia.etherscan.io']
+        blockExplorerUrls: ['https://sepolia.etherscan.io'],
       },
       1337: {
         chainId: '0x539',
         chainName: 'Localhost',
         rpcUrls: ['http://localhost:8545'],
         nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-        blockExplorerUrls: []
-      }
+        blockExplorerUrls: [],
+      },
     }
-    
+
     return networks[chainId] || networks[1]
   }
 
@@ -225,6 +264,6 @@ export function useWeb3() {
 // Extend Window interface for TypeScript
 declare global {
   interface Window {
-    ethereum?: any
+    ethereum?: EthereumProvider
   }
 }

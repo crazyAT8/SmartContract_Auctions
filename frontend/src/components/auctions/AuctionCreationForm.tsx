@@ -72,6 +72,22 @@ interface FormData {
   biddingTimeOrderBook: string // in hours
 }
 
+/** Payload sent to POST /api/auctions */
+interface CreateAuctionPayload {
+  title: string
+  description: string | null
+  imageUrl: string | null
+  type: string
+  startPrice?: string
+  reservePrice?: string
+  duration?: number
+  priceDropInterval?: number
+  biddingTime?: number
+  revealTime?: number
+  minHoldAmount?: string
+  tokenAddress?: string
+}
+
 export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
   const { account, signer } = useWeb3()
   const [step, setStep] = useState<'type' | 'details' | 'review'>('type')
@@ -221,8 +237,8 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
     return true
   }
 
-  const prepareAuctionData = () => {
-    const baseData: any = {
+  const prepareAuctionData = (): CreateAuctionPayload => {
+    const baseData: CreateAuctionPayload = {
       title: formData.title,
       description: formData.description || null,
       imageUrl: formData.imageUrl || null,
@@ -301,9 +317,10 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
       const auction = await response.json()
       toast.success('Auction created successfully!')
       onSuccess(auction.id)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating auction:', error)
-      toast.error(error.message || 'Failed to create auction')
+      const message = error instanceof Error ? error.message : 'Failed to create auction'
+      toast.error(message)
     } finally {
       setIsSubmitting(false)
     }
