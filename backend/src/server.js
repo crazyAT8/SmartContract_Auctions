@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
+const swaggerUi = require('swagger-ui-express');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
@@ -12,6 +13,7 @@ const auctionRoutes = require('./routes/auctions');
 const userRoutes = require('./routes/users');
 const web3Routes = require('./routes/web3');
 const authRoutes = require('./routes/auth');
+const { swaggerSpec } = require('./docs/openapi');
 const { connectDatabase } = require('./config/database');
 const { connectRedis } = require('./config/redis');
 const { errorHandler } = require('./middleware/errorHandler');
@@ -30,15 +32,26 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 3001;
 
-// Rate limiting
+// Rate limiting (skip OpenAPI docs)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
+  message: 'Too many requests from this IP, please try again later.',
+  skip: (req) => req.path.startsWith('/api/docs')
 });
 
-// Middleware
-app.use(helmet());
+// Middleware — CSP relaxed enough for Swagger UI (inline scripts/styles)
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'"]
+    }
+  }
+}));
 app.use(compression());
 app.use(cors({
   origin: process.env.FRONTEND_URL || "http://localhost:3000",
@@ -57,6 +70,17 @@ app.get('/health', (req, res) => {
     uptime: process.uptime()
   });
 });
+
+// OpenAPI — no JWT required
+app.get('/api/docs.json', (req, res) => {
+  res.json(swaggerSpec);
+});
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customSiteTitle: 'Auction dApp API Docs',
+  swaggerOptions: {
+    persistAuthorization: true
+  }
+}));
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -89,6 +113,7 @@ async function startServer() {
     // Start HTTP server
     server.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
+      logger.info(`API docs: http://localhost:${PORT}/api/docs`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
     });
 

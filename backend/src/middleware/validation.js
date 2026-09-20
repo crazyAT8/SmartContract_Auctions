@@ -99,6 +99,12 @@ const validateBid = (req, res, next) => {
 };
 
 module.exports = {
+  // Schemas (source of truth for OpenAPI request bodies)
+  authNonceSchema,
+  authLoginSchema,
+  auctionSchema,
+  bidSchema,
+  // Middleware
   validateAuthNonce,
   validateAuthLogin,
   validateAuction,

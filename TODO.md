@@ -28,7 +28,7 @@ A full-stack Ethereum auction platform with seven auction types, wallet auth, on
 **Not in scope / not built**
 
 - Admin UI, fiat payments, email/push notifications
-- OpenAPI/Swagger, React error boundaries
+- React error boundaries
 - Full E2E coverage; HoldToCompete contract tests still thin
 
 **Ops gotchas (local)**
@@ -58,13 +58,13 @@ See also: `ISSUES_AND_TODO.md`, `QUICK_TEST.md`, `TESTING_GUIDE.md`, `backend/SE
 
 ### Ops & wiring (do next)
 
-- [ ] **Compile artifacts for backend** – `cd contracts && npm run compile:artifacts` so deploy-on-start finds bytecode under `backend/src/contracts/artifacts/`
+- [x] **Compile artifacts for backend** – `cd contracts && npm run compile:artifacts` so deploy-on-start finds bytecode under `backend/src/contracts/artifacts/`
 - [x] **Fix deployments path** – Point `backend/src/routes/web3.js` at repo-root `contracts/deployments.json`
-- [ ] **Local chain smoke** – Hardhat node → deploy → create/start auction → bid → end; confirm addresses resolve
+- [x] **Local chain smoke** – Hardhat node → deploy → create/start auction → bid → end; confirm addresses resolve (`contracts/scripts/local-chain-smoke.js`)
 
 ### Quality & UX
 
-- [ ] **API docs** – Swagger/OpenAPI for auth, auctions, users, web3
+- [x] **API docs** – Swagger/OpenAPI for auth, auctions, users, web3 (`GET /api/docs`, `GET /api/docs.json`)
 - [ ] **React error boundaries** – Prevent full-app crash on component failures
 - [ ] **Tighten TypeScript** – Replace remaining `any` in `frontend/src/`
 - [ ] **Loading / retry** – Fill gaps on async actions; clear toasts + optional retry for failed tx/API calls
