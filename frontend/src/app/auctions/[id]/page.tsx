@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { AuctionDetails } from '@/components/auctions/AuctionDetails'
 import { BiddingInterface } from '@/components/auctions/BiddingInterface'
 import { BidHistory } from '@/components/auctions/BidHistory'
@@ -230,10 +231,22 @@ export default function AuctionDetailPage() {
               </div>
 
               {/* Auction Details */}
-              <AuctionDetails auction={auction} />
+              <ErrorBoundary
+                resetKeys={[auction.id]}
+                title="Auction details failed"
+                description="Could not render auction details. Try again."
+              >
+                <AuctionDetails auction={auction} />
+              </ErrorBoundary>
 
               {/* Bid History */}
-              <BidHistory auctionId={auction.id} />
+              <ErrorBoundary
+                resetKeys={[auction.id]}
+                title="Bid history failed"
+                description="Could not load bid history. Try again."
+              >
+                <BidHistory auctionId={auction.id} />
+              </ErrorBoundary>
             </div>
 
             {/* Right Column - Bidding & Info */}
@@ -312,20 +325,32 @@ export default function AuctionDetailPage() {
 
                 {/* Sealed bid reveal phase (only visible when in reveal window) */}
                 {!isEnded && auction.type === 'SEALED_BID' && auction.contractAddress && (
-                  <SealedBidReveal
-                    auctionId={auction.id}
-                    contractAddress={auction.contractAddress}
-                    onRevealed={handleBidPlaced}
-                  />
+                  <ErrorBoundary
+                    resetKeys={[auction.id]}
+                    title="Reveal failed"
+                    description="Could not render sealed-bid reveal. Try again."
+                  >
+                    <SealedBidReveal
+                      auctionId={auction.id}
+                      contractAddress={auction.contractAddress}
+                      onRevealed={handleBidPlaced}
+                    />
+                  </ErrorBoundary>
                 )}
 
                 {/* Bidding Interface */}
                 {!isEnded && (
-                  <BiddingInterface
-                    auction={auction}
-                    onBidPlaced={handleBidPlaced}
-                    isCreator={isCreator}
-                  />
+                  <ErrorBoundary
+                    resetKeys={[auction.id]}
+                    title="Bidding unavailable"
+                    description="The bidding UI failed. Refresh or try again."
+                  >
+                    <BiddingInterface
+                      auction={auction}
+                      onBidPlaced={handleBidPlaced}
+                      isCreator={isCreator}
+                    />
+                  </ErrorBoundary>
                 )}
 
                 {isEnded && (

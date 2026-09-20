@@ -28,7 +28,6 @@ A full-stack Ethereum auction platform with seven auction types, wallet auth, on
 **Not in scope / not built**
 
 - Admin UI, fiat payments, email/push notifications
-- React error boundaries
 - Full E2E coverage; HoldToCompete contract tests still thin
 
 **Ops gotchas (local)**
@@ -65,7 +64,7 @@ See also: `ISSUES_AND_TODO.md`, `QUICK_TEST.md`, `TESTING_GUIDE.md`, `backend/SE
 ### Quality & UX
 
 - [x] **API docs** – Swagger/OpenAPI for auth, auctions, users, web3 (`GET /api/docs`, `GET /api/docs.json`)
-- [ ] **React error boundaries** – Prevent full-app crash on component failures
+- [x] **React error boundaries** – Prevent full-app crash on component failures (`error.tsx`, `global-error.tsx`, section `ErrorBoundary`)
 - [ ] **Tighten TypeScript** – Replace remaining `any` in `frontend/src/`
 - [ ] **Loading / retry** – Fill gaps on async actions; clear toasts + optional retry for failed tx/API calls
 - [ ] **Socket vs REST bids** – Align live updates: REST bid path should emit Socket.IO events; socket `place_bid` should match REST auth/validation strength
@@ -100,4 +99,4 @@ See also: `ISSUES_AND_TODO.md`, `QUICK_TEST.md`, `TESTING_GUIDE.md`, `backend/SE
 
 ---
 
-*Last updated: 2026-09-18. Keep in sync with `ISSUES_AND_TODO.md`.*
+*Last updated: 2026-09-20. Keep in sync with `ISSUES_AND_TODO.md`.*

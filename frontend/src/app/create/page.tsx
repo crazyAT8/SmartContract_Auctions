@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { AuctionCreationForm } from '@/components/auctions/AuctionCreationForm'
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { useWeb3 } from '@/contexts/Web3Context'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 
@@ -51,9 +52,14 @@ export default function CreateAuctionPage() {
             </p>
           </div>
 
-          <AuctionCreationForm onSuccess={(auctionId) => {
-            router.push(`/auctions/${auctionId}`)
-          }} />
+          <ErrorBoundary
+            title="Create form failed"
+            description="The auction creation form hit an error. Try again."
+          >
+            <AuctionCreationForm onSuccess={(auctionId) => {
+              router.push(`/auctions/${auctionId}`)
+            }} />
+          </ErrorBoundary>
         </div>
       </main>
       

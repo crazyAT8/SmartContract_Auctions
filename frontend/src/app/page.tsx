@@ -6,6 +6,7 @@ import { FeaturedAuctions } from '@/components/sections/FeaturedAuctions'
 import { Stats } from '@/components/sections/Stats'
 import { Footer } from '@/components/layout/Footer'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 
 export default function Home() {
   return (
@@ -13,21 +14,29 @@ export default function Home() {
       <Header />
       
       <main>
-        <Suspense fallback={<LoadingSpinner />}>
-          <Hero />
-        </Suspense>
+        <ErrorBoundary title="Hero failed to load" description="The hero section hit an error. Other parts of the page should still work.">
+          <Suspense fallback={<LoadingSpinner />}>
+            <Hero />
+          </Suspense>
+        </ErrorBoundary>
         
-        <Suspense fallback={<LoadingSpinner />}>
-          <AuctionTypes />
-        </Suspense>
+        <ErrorBoundary title="Auction types failed to load" description="Could not render auction types. Try again or browse auctions directly.">
+          <Suspense fallback={<LoadingSpinner />}>
+            <AuctionTypes />
+          </Suspense>
+        </ErrorBoundary>
         
-        <Suspense fallback={<LoadingSpinner />}>
-          <FeaturedAuctions />
-        </Suspense>
+        <ErrorBoundary title="Featured auctions failed to load" description="Could not load featured auctions. Try again or visit All Auctions.">
+          <Suspense fallback={<LoadingSpinner />}>
+            <FeaturedAuctions />
+          </Suspense>
+        </ErrorBoundary>
         
-        <Suspense fallback={<LoadingSpinner />}>
-          <Stats />
-        </Suspense>
+        <ErrorBoundary title="Stats failed to load" description="Could not load platform stats.">
+          <Suspense fallback={<LoadingSpinner />}>
+            <Stats />
+          </Suspense>
+        </ErrorBoundary>
       </main>
       
       <Footer />
