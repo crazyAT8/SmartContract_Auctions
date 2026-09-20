@@ -23,12 +23,12 @@ A full-stack Ethereum auction platform with seven auction types, wallet auth, on
 - Bid validation against contract state; `Bid.transactionHash` persisted
 - Sealed-bid reveal (API + UI); auction end cron (`auctionEndProcessor`)
 - In-app notifications + Socket.IO rooms; env files and Prisma migrations in place
-- Route/unit tests for backend auth/auctions/web3, some frontend components, contract tests (6 of 7 types)
+- Route/unit tests for backend auth/auctions/web3, some frontend components, contract tests (all 7 types)
 
 **Not in scope / not built**
 
 - Admin UI, fiat payments, email/push notifications
-- Full E2E coverage; HoldToCompete contract tests still thin
+- Full E2E coverage
 
 **Ops gotchas (local)**
 
@@ -71,7 +71,7 @@ See also: `ISSUES_AND_TODO.md`, `QUICK_TEST.md`, `TESTING_GUIDE.md`, `backend/SE
 
 ### Testing
 
-- [ ] **HoldToCompete contract tests** – Cover in `contracts/test/`
+- [x] **HoldToCompete contract tests** – Cover in `contracts/test/`
 - [ ] **Deeper frontend tests** – BiddingInterface, AuctionCreationForm, sealed reveal
 - [ ] **Integration / E2E** – Create → start (deploy) → bid → end for at least Dutch + English, then others
 
