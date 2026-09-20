@@ -1,12 +1,20 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useWeb3 } from '@/contexts/Web3Context'
 import { getAuctionABI } from '@/contracts/contracts'
 import { formatEther } from '@/utils/formatting'
 import { ethers } from 'ethers'
 import toast from 'react-hot-toast'
 import { EyeIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
+import {
+  REVEAL_TOAST_ID,
+  toastErrorWithRetry,
+  toastLoading,
+  toastSuccess,
+} from '@/utils/toast'
+import { AsyncState } from '@/components/ui/AsyncState'
+import { getUserFriendlyError } from '@/utils/errors'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 const SEALED_BID_STORAGE_KEY = 'sealedBidReveal'
@@ -55,10 +63,13 @@ export function SealedBidReveal({ auctionId, contractAddress, onRevealed }: Seal
   const { isConnected, account, signer } = useWeb3()
   const [phaseState, setPhaseState] = useState<SealedBidPhase | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [revealing, setRevealing] = useState(false)
   const [stored, setStored] = useState<StoredSealedBid | null>(null)
   const [manualValue, setManualValue] = useState('')
   const [manualSecret, setManualSecret] = useState('')
+  const phaseRef = useRef<SealedBidPhase | null>(null)
+  phaseRef.current = phaseState
 
   const fetchState = useCallback(async () => {
     if (!contractAddress) return
@@ -66,7 +77,9 @@ export function SealedBidReveal({ auctionId, contractAddress, onRevealed }: Seal
       const res = await fetch(
         `${API_BASE_URL}/web3/auction/${encodeURIComponent(contractAddress)}/state?type=SEALED_BID`
       )
-      if (!res.ok) return
+      if (!res.ok) {
+        throw new Error('Failed to load sealed bid phase')
+      }
       const data = await res.json()
       const now = Math.floor(Date.now() / 1000)
       const biddingEnd = Number(data.biddingEnd ?? 0)
@@ -80,8 +93,12 @@ export function SealedBidReveal({ auctionId, contractAddress, onRevealed }: Seal
         revealEnd: data.revealEnd,
         now,
       })
-    } catch {
-      setPhaseState(null)
+      setLoadError(null)
+    } catch (error) {
+      if (!phaseRef.current) {
+        setPhaseState(null)
+        setLoadError(getUserFriendlyError(error, 'Failed to load sealed bid phase'))
+      }
     } finally {
       setLoading(false)
     }
@@ -139,11 +156,11 @@ export function SealedBidReveal({ auctionId, contractAddress, onRevealed }: Seal
     setRevealing(true)
     try {
       const contract = new ethers.Contract(contractAddress, abi, signer)
-      toast.loading('Confirm reveal in your wallet...', { id: 'reveal-pending' })
+      toastLoading('Confirm reveal in your wallet...', REVEAL_TOAST_ID)
       const tx = await contract.reveal(valueWei, secretHex)
-      toast.loading('Waiting for confirmation...', { id: 'reveal-pending' })
+      toastLoading('Waiting for confirmation...', REVEAL_TOAST_ID)
       await tx.wait()
-      toast.success('Bid revealed successfully!', { id: 'reveal-pending' })
+      toastSuccess('Bid revealed successfully!', REVEAL_TOAST_ID)
       clearStoredSealedBid(auctionId, account)
       setStored(null)
       setManualValue('')
@@ -151,19 +168,35 @@ export function SealedBidReveal({ auctionId, contractAddress, onRevealed }: Seal
       fetchState()
       onRevealed?.()
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Reveal failed'
-      toast.error(msg, { id: 'reveal-pending' })
       console.error('Reveal error:', err)
+      toastErrorWithRetry(err, {
+        id: REVEAL_TOAST_ID,
+        fallback: 'Reveal failed',
+        onRetry: () => {
+          void handleReveal()
+        },
+      })
     } finally {
       setRevealing(false)
     }
   }
 
-  if (loading || !phaseState) {
+  if (loading || loadError || !phaseState) {
     return (
-      <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-        <p className="text-sm text-gray-500">Loading sealed bid phase...</p>
-      </div>
+      <AsyncState
+        loading={loading}
+        error={loadError}
+        onRetry={() => {
+          setLoading(true)
+          void fetchState()
+        }}
+        loadingLabel="Loading sealed bid phase..."
+        className="bg-gray-50 border border-gray-200 rounded-lg"
+      >
+        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <p className="text-sm text-gray-500">Sealed bid phase unavailable</p>
+        </div>
+      </AsyncState>
     )
   }
 

@@ -66,7 +66,7 @@ See also: `ISSUES_AND_TODO.md`, `QUICK_TEST.md`, `TESTING_GUIDE.md`, `backend/SE
 - [x] **API docs** – Swagger/OpenAPI for auth, auctions, users, web3 (`GET /api/docs`, `GET /api/docs.json`)
 - [x] **React error boundaries** – Prevent full-app crash on component failures (`error.tsx`, `global-error.tsx`, section `ErrorBoundary`)
 - [x] **Tighten TypeScript** – Replace remaining `any` in `frontend/src/`
-- [ ] **Loading / retry** – Fill gaps on async actions; clear toasts + optional retry for failed tx/API calls
+- [x] **Loading / retry** – Fill gaps on async actions; clear toasts + optional retry for failed tx/API calls
 - [ ] **Socket vs REST bids** – Align live updates: REST bid path should emit Socket.IO events; socket `place_bid` should match REST auth/validation strength
 
 ### Testing

@@ -8,7 +8,7 @@ export function WalletConnectButton() {
 
   return (
     <button
-      onClick={connect}
+      onClick={() => void connect()}
       disabled={isConnecting}
       className="btn-primary flex items-center space-x-2"
     >

@@ -17,6 +17,7 @@ import {
 import toast from 'react-hot-toast'
 import { ethers } from 'ethers'
 import { apiRequest } from '@/utils/api'
+import { CREATE_TOAST_ID, toastErrorWithRetry, toastLoading, toastSuccess } from '@/utils/toast'
 
 interface AuctionCreationFormProps {
   onSuccess: (auctionId: string) => void
@@ -296,6 +297,7 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
     }
 
     setIsSubmitting(true)
+    toastLoading('Creating auction...', CREATE_TOAST_ID)
     try {
       const auctionData = prepareAuctionData()
 
@@ -310,17 +312,24 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
       )
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to create auction')
+        const error = await response.json().catch(() => ({}))
+        throw new Error(
+          (error as { error?: string }).error || 'Failed to create auction'
+        )
       }
 
       const auction = await response.json()
-      toast.success('Auction created successfully!')
+      toastSuccess('Auction created successfully!', CREATE_TOAST_ID)
       onSuccess(auction.id)
     } catch (error: unknown) {
       console.error('Error creating auction:', error)
-      const message = error instanceof Error ? error.message : 'Failed to create auction'
-      toast.error(message)
+      toastErrorWithRetry(error, {
+        id: CREATE_TOAST_ID,
+        fallback: 'Failed to create auction',
+        onRetry: () => {
+          void handleSubmit()
+        },
+      })
     } finally {
       setIsSubmitting(false)
     }

@@ -5,8 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
+import { AsyncState } from '@/components/ui/AsyncState'
 import { AuctionDetails } from '@/components/auctions/AuctionDetails'
 import { BiddingInterface } from '@/components/auctions/BiddingInterface'
 import { BidHistory } from '@/components/auctions/BidHistory'
@@ -14,6 +14,7 @@ import { SealedBidReveal } from '@/components/auctions/SealedBidReveal'
 import { useWeb3 } from '@/contexts/Web3Context'
 import { useSocket } from '@/contexts/SocketContext'
 import toast from 'react-hot-toast'
+import { getUserFriendlyError } from '@/utils/errors'
 import { formatAddress, formatEther, formatTimeRemaining, formatAuctionType, getAuctionTypeColor, getAuctionStatusColor } from '@/utils/formatting'
 import { ClockIcon, UserIcon, CurrencyDollarIcon, EyeIcon } from '@heroicons/react/24/outline'
 
@@ -55,17 +56,23 @@ export default function AuctionDetailPage() {
   const { joinAuction, leaveAuction, socket } = useSocket()
   const [auction, setAuction] = useState<Auction | null>(null)
   const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [notFound, setNotFound] = useState(false)
   const auctionId = params.id as string
 
-  const fetchAuction = useCallback(async () => {
+  const fetchAuction = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) {
+      setLoading(true)
+      setError(null)
+    }
     try {
       const response = await fetch(`${API_BASE_URL}/auctions/${auctionId}`)
-      
+
       if (!response.ok) {
         if (response.status === 404) {
+          setNotFound(true)
+          setAuction(null)
           toast.error('Auction not found')
-          router.push('/auctions')
           return
         }
         throw new Error('Failed to fetch auction')
@@ -73,44 +80,18 @@ export default function AuctionDetailPage() {
 
       const data = await response.json()
       setAuction(data)
-    } catch (error) {
-      console.error('Error fetching auction:', error)
-      toast.error('Failed to load auction details')
-      
-      // Fallback to mock data for development
-      const mockAuction: Auction = {
-        id: auctionId,
-        title: 'Rare Digital Art Collection',
-        description: 'A unique collection of digital art pieces from renowned artists. This exclusive auction features one-of-a-kind pieces that have never been seen before.',
-        imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&h=600&fit=crop',
-        type: 'ENGLISH',
-        status: 'ACTIVE',
-        contractAddress: '0x1234567890123456789012345678901234567890',
-        currentPrice: '2.5',
-        highestBid: '2.5',
-        highestBidder: '0x9876543210987654321098765432109876543210',
-        winner: null,
-        totalBids: 15,
-        totalVolume: '37.5',
-        creator: {
-          id: '1',
-          address: '0x1234567890123456789012345678901234567890',
-          username: 'ArtCollector'
-        },
-        startTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        endTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-        startPrice: '1.0',
-        reservePrice: '0.5',
-        duration: 14400,
-        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date().toISOString()
+      setNotFound(false)
+      setError(null)
+    } catch (err) {
+      console.error('Error fetching auction:', err)
+      if (!opts?.silent) {
+        setAuction(null)
+        setError(getUserFriendlyError(err, 'Failed to load auction details'))
       }
-      setAuction(mockAuction)
     } finally {
       setLoading(false)
-      setRefreshing(false)
     }
-  }, [auctionId, router])
+  }, [auctionId])
 
   useEffect(() => {
     fetchAuction()
@@ -153,9 +134,7 @@ export default function AuctionDetailPage() {
   }, [auction, socket, joinAuction, leaveAuction])
 
   const handleBidPlaced = () => {
-    // Refresh auction data after bid
-    setRefreshing(true)
-    fetchAuction()
+    void fetchAuction({ silent: true })
   }
 
   const getTimeRemaining = () => {
@@ -166,32 +145,40 @@ export default function AuctionDetailPage() {
     return formatTimeRemaining(seconds)
   }
 
-  if (loading) {
+  if (loading || error || notFound || !auction) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
-        <main className="flex justify-center items-center min-h-[60vh]">
-          <LoadingSpinner />
-        </main>
-        <Footer />
-      </div>
-    )
-  }
-
-  if (!auction) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <main className="flex justify-center items-center min-h-[60vh]">
-          <div className="text-center">
-            <p className="text-gray-500 text-lg mb-4">Auction not found</p>
-            <button
-              onClick={() => router.push('/auctions')}
-              className="btn-primary"
+        <main className="flex justify-center items-center min-h-[60vh] px-4">
+          {notFound ? (
+            <div className="text-center">
+              <p className="text-gray-500 text-lg mb-4">Auction not found</p>
+              <button
+                onClick={() => router.push('/auctions')}
+                className="btn-primary"
+              >
+                Back to Auctions
+              </button>
+            </div>
+          ) : (
+            <AsyncState
+              loading={loading}
+              error={error}
+              onRetry={() => void fetchAuction()}
+              loadingLabel="Loading auction..."
+              className="w-full max-w-md"
             >
-              Back to Auctions
-            </button>
-          </div>
+              <div className="text-center">
+                <p className="text-gray-500 text-lg mb-4">Auction unavailable</p>
+                <button
+                  onClick={() => router.push('/auctions')}
+                  className="btn-primary"
+                >
+                  Back to Auctions
+                </button>
+              </div>
+            </AsyncState>
+          )}
         </main>
         <Footer />
       </div>

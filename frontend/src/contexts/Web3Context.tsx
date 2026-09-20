@@ -4,6 +4,12 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { ethers } from 'ethers'
 import toast from 'react-hot-toast'
 import { getAuthToken, clearAuthToken } from '@/utils/api'
+import {
+  CONNECT_TOAST_ID,
+  toastErrorWithRetry,
+  toastLoading,
+  toastSuccess,
+} from '@/utils/toast'
 
 /** EIP-3085 wallet_addEthereumChain params */
 interface AddEthereumChainParameter {
@@ -32,19 +38,10 @@ interface Web3ContextType {
   chainId: number | null
   isConnected: boolean
   isConnecting: boolean
-  connect: () => Promise<void>
+  connect: (opts?: { silent?: boolean }) => Promise<void>
   disconnect: () => void
   switchNetwork: (chainId: number) => Promise<void>
   getBalance: () => Promise<string>
-}
-
-function getErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message) return error.message
-  if (typeof error === 'object' && error !== null && 'message' in error) {
-    const message = (error as { message: unknown }).message
-    if (typeof message === 'string' && message) return message
-  }
-  return fallback
 }
 
 function getErrorCode(error: unknown): number | undefined {
@@ -77,7 +74,7 @@ export function Web3Provider({ children }: { children: ReactNode }) {
           method: 'eth_accounts',
         })) as string[]
         if (accounts.length > 0) {
-          await connect()
+          await connect({ silent: true })
         }
       } catch (error) {
         console.error('Error checking connection:', error)
@@ -120,13 +117,15 @@ export function Web3Provider({ children }: { children: ReactNode }) {
     disconnect()
   }
 
-  const connect = async () => {
+  const connect = async (opts?: { silent?: boolean }) => {
     if (typeof window.ethereum === 'undefined') {
       toast.error('MetaMask is not installed')
       return
     }
 
+    const silent = opts?.silent === true
     setIsConnecting(true)
+    if (!silent) toastLoading('Connecting wallet...', CONNECT_TOAST_ID)
     try {
       const accounts = (await window.ethereum.request({
         method: 'eth_requestAccounts',
@@ -142,12 +141,21 @@ export function Web3Provider({ children }: { children: ReactNode }) {
       setChainId(Number(network.chainId))
       setIsConnected(true)
 
+      if (!silent) toastLoading('Signing in...', CONNECT_TOAST_ID)
       await getAuthToken(signer, accounts[0])
 
-      toast.success('Wallet connected successfully')
+      if (!silent) toastSuccess('Wallet connected successfully', CONNECT_TOAST_ID)
     } catch (error: unknown) {
       console.error('Error connecting wallet:', error)
-      toast.error(getErrorMessage(error, 'Failed to connect wallet'))
+      if (!silent) {
+        toastErrorWithRetry(error, {
+          id: CONNECT_TOAST_ID,
+          fallback: 'Failed to connect wallet',
+          onRetry: () => {
+            void connect()
+          },
+        })
+      }
     } finally {
       setIsConnecting(false)
     }
@@ -184,11 +192,21 @@ export function Web3Provider({ children }: { children: ReactNode }) {
           })
         } catch (addError) {
           console.error('Error adding network:', addError)
-          toast.error('Failed to add network')
+          toastErrorWithRetry(addError, {
+            fallback: 'Failed to add network',
+            onRetry: () => {
+              void switchNetwork(targetChainId)
+            },
+          })
         }
       } else {
         console.error('Error switching network:', error)
-        toast.error('Failed to switch network')
+        toastErrorWithRetry(error, {
+          fallback: 'Failed to switch network',
+          onRetry: () => {
+            void switchNetwork(targetChainId)
+          },
+        })
       }
     }
   }

@@ -64,7 +64,7 @@
 | 20 | **No API docs** | Root | No Swagger/OpenAPI. |
 | 21 | **No error boundaries** | Frontend | Full app crash on uncaught React errors. |
 | 22 | **Incomplete types** | `frontend/src/` | Remaining `any` reduces type safety. |
-| 23 | **Missing loading states** | Various frontend | Some async ops still lack loading/disabled UI. |
+| 23 | ~~**Missing loading states**~~ | Various frontend | Resolved: AsyncState + toast loading/retry on fetches and tx/API actions. |
 | 24 | **Root README / demo drift** | Root `README.md`, `app/` | Docs and root demo describe Wagmi/RainbowKit; product UI is `frontend/`. |
 | 25 | **No admin / fiat** | — | Out of current scope. |
 
@@ -105,7 +105,7 @@
 - [ ] **Add API documentation** – Swagger/OpenAPI.
 - [ ] **Add error boundaries** – React error boundaries in frontend.
 - [ ] **Tighten TypeScript** – Replace remaining `any`.
-- [ ] **Add loading states** – Remaining async operations.
+- [x] **Add loading states** – Remaining async operations.
 - [ ] **Update root README** – Point to `frontend/` + Express as primary app.
 - [ ] **Email/push notifications** (optional) – Beyond in-app.
 

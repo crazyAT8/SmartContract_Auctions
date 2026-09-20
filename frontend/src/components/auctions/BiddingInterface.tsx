@@ -9,6 +9,12 @@ import toast from 'react-hot-toast'
 import { ethers } from 'ethers'
 import { getAuctionABI, type AuctionType } from '@/contracts/contracts'
 import { apiRequest } from '@/utils/api'
+import {
+  toastErrorWithRetry,
+  toastLoading,
+  toastSuccess,
+  TX_TOAST_ID,
+} from '@/utils/toast'
 
 interface BiddingInterfaceProps {
   auction: {
@@ -149,18 +155,24 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
           setIsPlacingBid(false)
           return
         }
+        toastLoading('Submitting bid...', TX_TOAST_ID)
         await placeBidViaAPI(bidAmount)
+        toastSuccess('Bid placed successfully!', TX_TOAST_ID)
       }
 
-      toast.success('Bid placed successfully!')
       setBidAmount('')
       setOrderBookPrice('')
       setOrderBookAmount('')
       onBidPlaced()
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Failed to place bid'
       console.error('Error placing bid:', error)
-      toast.error(msg)
+      toastErrorWithRetry(error, {
+        id: TX_TOAST_ID,
+        fallback: 'Failed to place bid',
+        onRetry: () => {
+          void handlePlaceBid()
+        },
+      })
     } finally {
       setIsPlacingBid(false)
     }
@@ -180,6 +192,8 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
     }
 
     const contract = new ethers.Contract(contractAddress, abi, signer)
+
+    toastLoading('Confirm transaction in your wallet...', TX_TOAST_ID)
 
     let tx: ethers.ContractTransactionResponse
 
@@ -239,16 +253,18 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
       }
     }
 
-    toast.loading('Waiting for transaction confirmation...', { id: 'tx-pending' })
+    toastLoading('Waiting for confirmation...', TX_TOAST_ID)
     const receipt = await tx.wait()
-    toast.success('Transaction confirmed!', { id: 'tx-pending' })
+    if (!receipt) throw new Error('Transaction failed to confirm')
 
+    toastLoading('Recording bid...', TX_TOAST_ID)
     const amountForApi = isOrderBook
       ? (orderBookSide === 'buy'
           ? ethers.formatEther(ethers.parseEther(orderBookPrice) * BigInt(Math.floor(parseFloat(orderBookAmount))))
           : '0')
       : bidAmount
     await placeBidViaAPI(amountForApi, receipt.hash)
+    toastSuccess('Bid placed successfully!', TX_TOAST_ID)
   }
 
   const placeBidViaAPI = async (amount: string, txHash?: string) => {
