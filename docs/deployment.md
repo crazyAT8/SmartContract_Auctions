@@ -19,31 +19,35 @@ git clone <repository-url>
 cd auction-dapp
 ```
 
-2. **Start all services:**
+2. **Start core services** (Postgres, Redis, backend, frontend):
 ```bash
-docker-compose up -d
+docker compose up -d --build
 ```
 
-This will start:
-- PostgreSQL database on port 5432
-- Redis cache on port 6379
-- Backend API on port 3001
+Migrations run automatically on backend start (`prisma migrate deploy`).
+
+This starts:
+- PostgreSQL on port 5432
+- Redis on port 6379
+- Backend API on port 3001 (`GET /health`)
 - Frontend on port 3000
-- Hardhat local network on port 8545
 
-3. **Initialize the database:**
+3. **Optional local chain** (Hardhat on :8545):
 ```bash
-# Run database migrations
-docker-compose exec backend npx prisma migrate dev
+docker compose --profile local-chain up -d --build
 
-# Seed initial data (optional)
-docker-compose exec backend npm run seed
+# Deploy factory contracts into the container chain, then refresh deployments.json on the host
+docker compose --profile local-chain exec hardhat \
+  npx hardhat run scripts/deploy.js --network localhost
 ```
 
-4. **Deploy contracts:**
+Backend defaults to `ETHEREUM_RPC_URL=http://hardhat:8545` and Hardhat account #0.
+Override `ETHEREUM_RPC_URL` / `PRIVATE_KEY` when pointing at Sepolia or another network instead of the profile.
+
+4. **Smoke checks:**
 ```bash
-# Deploy to local network
-docker-compose exec hardhat npx hardhat run scripts/deploy.js --network localhost
+curl http://localhost:3001/health
+curl -o /dev/null -w "%{http_code}\n" http://localhost:3000/
 ```
 
 ### Manual Setup
@@ -155,12 +159,17 @@ export POSTGRES_USER=appuser
 export POSTGRES_PASSWORD='...'
 export REDIS_PASSWORD='...'
 
+# Also set public URLs used at frontend image build time:
+export NEXT_PUBLIC_API_URL=https://api.yourdomain.com/api
+export NEXT_PUBLIC_WS_URL=https://api.yourdomain.com
+export NEXT_PUBLIC_ETHEREUM_RPC_URL=https://sepolia.infura.io/v3/YOUR_KEY
+
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-docker compose exec backend npx prisma migrate deploy
 ```
 
-The prod overlay disables the Hardhat service and loads secrets from `env_file`.
-Local `docker-compose.yml` alone stays on `NODE_ENV=development` with Hardhat.
+Migrations run on backend container start. The prod overlay loads secrets from
+`env_file`, requires strong Postgres/Redis passwords, and does not start Hardhat
+(Hardhat stays behind the `local-chain` profile on the base compose file).
 
 ### Manual Production Setup
 
@@ -266,29 +275,29 @@ ETHERSCAN_API_KEY=your_etherscan_api_key
 curl http://localhost:3001/health
 
 # Check database connection
-docker-compose exec backend npx prisma db pull
+docker compose exec backend npx prisma db pull
 
 # Check Redis connection
-docker-compose exec redis redis-cli ping
+docker compose exec redis redis-cli ping
 ```
 
 ### Logs
 ```bash
 # View all logs
-docker-compose logs -f
+docker compose logs -f
 
 # View specific service logs
-docker-compose logs -f backend
-docker-compose logs -f frontend
+docker compose logs -f backend
+docker compose logs -f frontend
 ```
 
 ### Database Backups
 ```bash
 # Create backup
-docker-compose exec postgres pg_dump -U postgres auction_dapp > backup.sql
+docker compose exec postgres pg_dump -U postgres auction_dapp > backup.sql
 
 # Restore backup
-docker-compose exec -T postgres psql -U postgres auction_dapp < backup.sql
+docker compose exec -T postgres psql -U postgres auction_dapp < backup.sql
 ```
 
 ## Troubleshooting

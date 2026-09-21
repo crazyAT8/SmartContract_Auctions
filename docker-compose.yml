@@ -1,7 +1,13 @@
-version: '3.8'
+# Local stack: Postgres, Redis, backend, frontend.
+# Optional Hardhat chain:  docker compose --profile local-chain up -d --build
+#
+# After first up:
+#   curl http://localhost:3001/health
+#   open http://localhost:3000
+# With local-chain profile, deploy factories:
+#   docker compose --profile local-chain exec hardhat npx hardhat run scripts/deploy.js --network localhost
 
 services:
-  # PostgreSQL Database
   postgres:
     image: postgres:15
     environment:
@@ -18,7 +24,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis Cache
   redis:
     image: redis:7-alpine
     ports:
@@ -31,57 +36,94 @@ services:
       timeout: 5s
       retries: 5
 
-  # Backend API
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
       - "3001:3001"
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/auction_dapp
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - PORT=3001
-      - JWT_SECRET=local-dev-only-not-for-production-use-32chars
-      - ETHEREUM_RPC_URL=http://hardhat:8545
-      - FRONTEND_URL=http://localhost:3000
-      # Set PRIVATE_KEY in a local override or .env — never commit real keys
-      - PRIVATE_KEY=${PRIVATE_KEY:-}
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/auction_dapp?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      PORT: "3001"
+      JWT_SECRET: local-dev-only-not-for-production-use-32chars
+      # Override when not using --profile local-chain (e.g. Sepolia RPC)
+      ETHEREUM_RPC_URL: ${ETHEREUM_RPC_URL:-http://hardhat:8545}
+      FRONTEND_URL: http://localhost:3000
+      CONTRACT_ADDRESSES_JSON: /app/contracts/deployments.json
+      # Hardhat account #0 — fine for local-chain profile only
+      PRIVATE_KEY: ${PRIVATE_KEY:-0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80}
+    volumes:
+      - ./contracts/deployments.json:/app/contracts/deployments.json:ro
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./contracts/deployments.json:/app/contracts/deployments.json:ro
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://127.0.0.1:3001/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 40s
 
-  # Frontend
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-http://localhost:3001}
+        NEXT_PUBLIC_ETHEREUM_RPC_URL: ${NEXT_PUBLIC_ETHEREUM_RPC_URL:-http://localhost:8545}
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:3001
-      - NEXT_PUBLIC_WS_URL=http://localhost:3001
-      - NEXT_PUBLIC_ETHEREUM_RPC_URL=http://localhost:8545
+      NODE_ENV: production
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://127.0.0.1:3000/',(r)=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
 
-  # Hardhat Local Network
+  # Optional local Ethereum node (Hardhat)
   hardhat:
+    profiles: ["local-chain"]
     build:
       context: ./contracts
       dockerfile: Dockerfile
     ports:
       - "8545:8545"
-    volumes:
-      - hardhat_data:/app/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').request({host:'127.0.0.1',port:8545,method:'POST',headers:{'Content-Type':'application/json'},timeout:3000},(r)=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>process.exit(0));}).on('error',()=>process.exit(1)).end(JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_chainId',params:[]}))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
 volumes:
   postgres_data:
   redis_data:
-  hardhat_data:

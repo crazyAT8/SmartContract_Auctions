@@ -1,19 +1,18 @@
-FROM node:18-alpine
+FROM node:20-bookworm-slim
 
 WORKDIR /app
 
-# Install dependencies
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
 COPY package*.json ./
 RUN npm ci
 
-# Copy source code
 COPY . .
 
-# Compile contracts
 RUN npx hardhat compile
 
-# Expose port
 EXPOSE 8545
 
-# Start Hardhat node
 CMD ["npx", "hardhat", "node", "--hostname", "0.0.0.0"]

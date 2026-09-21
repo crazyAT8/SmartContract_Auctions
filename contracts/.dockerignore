@@ -1,0 +1,10 @@
+node_modules
+.git
+cache
+artifacts
+coverage
+typechain-types
+.env
+.env.*
+!.env.example
+*.md

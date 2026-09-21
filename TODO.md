@@ -79,7 +79,7 @@ See also: `ISSUES_AND_TODO.md`, `QUICK_TEST.md`, `TESTING_GUIDE.md`, `backend/SE
 
 - [x] **Production env** – Prod DB, Redis, RPC, contract addresses; no dev keys in prod (`validateEnv`, `env.production.example`, `docker-compose.prod.yml`, `check:prod-env`)
 - [x] **Build & smoke** – Frontend `npm run build` + prod-mode smoke (`frontend`/`backend` `npm run smoke:prod`; local uses `ALLOW_LOCAL_PROD_SMOKE`)
-- [ ] **Docker** – Verify `docker-compose` (DB, Redis, backend, frontend; optional chain)
+- [x] **Docker** – Verify `docker-compose` (DB, Redis, backend, frontend; optional `--profile local-chain`)
 - [ ] **Clarify README** – Document `frontend/` + Express as the primary app (root demo is legacy)
 
 ### Optional enhancements
