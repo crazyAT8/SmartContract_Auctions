@@ -9,6 +9,7 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
 
+const { validateEnv } = require('./config/validateEnv');
 const auctionRoutes = require('./routes/auctions');
 const userRoutes = require('./routes/users');
 const web3Routes = require('./routes/web3');
@@ -102,6 +103,10 @@ setupSocketHandlers(io);
 // Start server
 async function startServer() {
   try {
+    // Refuse known dev secrets / localhost RPC when NODE_ENV=production
+    validateEnv();
+    logger.info('Environment validation passed');
+
     // Connect to database
     await connectDatabase();
     logger.info('Database connected successfully');

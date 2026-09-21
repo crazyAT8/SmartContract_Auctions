@@ -39,13 +39,16 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/auction_dapp
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - PORT=3001
-      - JWT_SECRET=your_jwt_secret_here
+      - JWT_SECRET=local-dev-only-not-for-production-use-32chars
       - ETHEREUM_RPC_URL=http://hardhat:8545
+      - FRONTEND_URL=http://localhost:3000
+      # Set PRIVATE_KEY in a local override or .env — never commit real keys
+      - PRIVATE_KEY=${PRIVATE_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

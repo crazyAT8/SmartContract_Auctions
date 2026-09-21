@@ -10,11 +10,11 @@ const router = express.Router();
 router.get('/contracts', async (req, res) => {
   try {
     const fs = require('fs');
-    const path = require('path');
 
     let contractAddresses = {};
     try {
-      const deploymentsPath = path.join(__dirname, '../../../contracts/deployments.json');
+      const { resolveDeploymentsPath } = require('../config/validateEnv');
+      const deploymentsPath = resolveDeploymentsPath();
       const deployments = JSON.parse(fs.readFileSync(deploymentsPath, 'utf8'));
       contractAddresses = deployments.contracts;
     } catch (error) {

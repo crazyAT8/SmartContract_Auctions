@@ -69,6 +69,7 @@ web_modules/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
 .env.local
 
 # parcel-bundler cache (https://parceljs.org/)
@@ -203,6 +204,10 @@ temp/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
+backend/.env.production
+frontend/.env.production
+contracts/.env.production
 
 # Vercel
 .vercel

@@ -13,7 +13,7 @@
 | Bid validation + `transactionHash` | Implemented |
 | Sealed reveal + end-processing cron | Implemented |
 | In-app notifications + Socket.IO | Implemented (no email/push) |
-| Env files + Prisma migrations | Present |
+| Env files + Prisma migrations | Present; prod templates + `validateEnv` guard |
 | Tests | Baseline + English/Dutch E2E (`e2e:local`); other types deferred |
 | Admin / fiat payments / OpenAPI | Not built |
 

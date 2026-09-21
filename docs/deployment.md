@@ -98,40 +98,52 @@ npm run dev
 
 ## Production Deployment
 
-### Using Docker Compose
+Production must use **real** DB, Redis, RPC, and contract addresses — never Hardhat defaults,
+`localhost` RPC, or placeholder JWT/private keys. The backend refuses to start in
+`NODE_ENV=production` if those slip through (`validateEnv`).
 
-1. **Set up production environment:**
+### Checklist
+
+1. **Copy production templates** (do not commit filled files):
+   ```bash
+   cp backend/env.production.example backend/.env.production
+   cp frontend/env.production.example frontend/.env.production
+   cp contracts/env.production.example contracts/.env
+   ```
+2. **Provision Postgres + Redis** with strong passwords (managed or self-hosted).
+3. **Create a dedicated deployer wallet**, fund it on the target network, set `PRIVATE_KEY`
+   (backend + contracts). Never use Hardhat account #0–9 keys.
+4. **Set RPC** to Infura/Alchemy/etc. for Sepolia (staging) or mainnet — not `:8545`.
+5. **Deploy contracts** to that network and update `contracts/deployments.json`:
+   ```bash
+   cd contracts
+   npx hardhat run scripts/deploy.js --network sepolia   # or mainnet
+   ```
+6. **Validate** before start:
+   ```bash
+   cd backend
+   NODE_ENV=production npm run check:prod-env
+   ```
+7. **Migrate + run**:
+   ```bash
+   cd backend && npm run migrate:prod && NODE_ENV=production npm start
+   cd frontend && npm run build && npm start
+   ```
+
+### Using Docker Compose (production overlay)
+
 ```bash
-# Create production environment file
-cp docker-compose.yml docker-compose.prod.yml
+# Fill backend/.env.production and frontend/.env.production first
+export POSTGRES_USER=appuser
+export POSTGRES_PASSWORD='...'
+export REDIS_PASSWORD='...'
+
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker compose exec backend npx prisma migrate deploy
 ```
 
-2. **Configure production settings:**
-```yaml
-# docker-compose.prod.yml
-version: '3.8'
-services:
-  backend:
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://user:password@postgres:5432/auction_dapp
-      - REDIS_HOST=redis
-      - JWT_SECRET=your_secure_jwt_secret
-      - ETHEREUM_RPC_URL=https://mainnet.infura.io/v3/YOUR_INFURA_KEY
-    restart: unless-stopped
-
-  frontend:
-    environment:
-      - NEXT_PUBLIC_API_URL=https://api.yourdomain.com
-      - NEXT_PUBLIC_WS_URL=wss://api.yourdomain.com
-      - NEXT_PUBLIC_ETHEREUM_RPC_URL=https://mainnet.infura.io/v3/YOUR_INFURA_KEY
-    restart: unless-stopped
-```
-
-3. **Deploy:**
-```bash
-docker-compose -f docker-compose.prod.yml up -d
-```
+The prod overlay disables the Hardhat service and loads secrets from `env_file`.
+Local `docker-compose.yml` alone stays on `NODE_ENV=development` with Hardhat.
 
 ### Manual Production Setup
 
@@ -181,7 +193,7 @@ pm2 start ecosystem.config.js
 
 ## Environment Variables
 
-### Backend (.env)
+### Backend (development — `env.example`)
 ```env
 # Database
 DATABASE_URL="postgresql://username:password@localhost:5432/auction_dapp"
@@ -305,8 +317,10 @@ docker-compose exec -T postgres psql -U postgres auction_dapp < backup.sql
 ## Security Considerations
 
 1. **Environment Variables:**
-   - Never commit .env files
-   - Use strong, unique secrets
+   - Never commit `.env` / `.env.production` files
+   - Use `backend/env.production.example` templates; fill secrets only on the host/CI
+   - Run `cd backend && NODE_ENV=production npm run check:prod-env` before go-live
+   - Backend `validateEnv` blocks Hardhat private keys, localhost RPC, placeholder JWT, and local `deployments.json` when `NODE_ENV=production`
    - Rotate keys regularly
 
 2. **Database:**
@@ -315,8 +329,8 @@ docker-compose exec -T postgres psql -U postgres auction_dapp < backup.sql
    - Regular security updates
 
 3. **Blockchain:**
-   - Secure private key storage
-   - Use hardware wallets for production
+   - Secure private key storage (dedicated deployer; never Hardhat defaults)
+   - Prefer a hardware wallet / KMS for high-value mainnet ops
    - Monitor for suspicious activity
 
 4. **API:**
