@@ -14,7 +14,7 @@
 | Sealed reveal + end-processing cron | Implemented |
 | In-app notifications + Socket.IO | Implemented (no email/push) |
 | Env files + Prisma migrations | Present |
-| Tests | Baseline exists; not full E2E |
+| Tests | Baseline + English/Dutch E2E (`e2e:local`); other types deferred |
 | Admin / fiat payments / OpenAPI | Not built |
 
 **Stack snapshot:** Frontend uses custom MetaMask/`Web3Context` (ethers), not RainbowKit. Backend: PostgreSQL, Redis, Socket.IO. Money is on-chain ETH (ERC20 for hold-to-compete).
@@ -60,7 +60,7 @@
 
 | # | Issue | Location | Impact |
 |---|--------|----------|--------|
-| 19 | **Test coverage thin** | All dirs | Route/unit tests exist; limited E2E; HoldToCompete now covered in `contracts/test/`. |
+| 19 | ~~**Test coverage thin**~~ | All dirs | Route/unit + HoldToCompete contract tests; English/Dutch E2E via `npm run e2e:local`. Remaining types still open. |
 | 20 | **No API docs** | Root | No Swagger/OpenAPI. |
 | 21 | **No error boundaries** | Frontend | Full app crash on uncaught React errors. |
 | 22 | **Incomplete types** | `frontend/src/` | Remaining `any` reduces type safety. |
@@ -101,7 +101,7 @@
 ### Phase 4 – Quality & docs
 
 - [x] **Write baseline tests** – Backend routes, frontend components, most contract types.
-- [x] **Expand tests** – BiddingInterface, AuctionCreationForm, SealedBidReveal. (E2E still open; HoldToCompete contract tests done)
+- [x] **Expand tests** – BiddingInterface, AuctionCreationForm, SealedBidReveal; HoldToCompete contract tests; English + Dutch E2E (`e2e:local`).
 - [ ] **Add API documentation** – Swagger/OpenAPI.
 - [ ] **Add error boundaries** – React error boundaries in frontend.
 - [ ] **Tighten TypeScript** – Replace remaining `any`.

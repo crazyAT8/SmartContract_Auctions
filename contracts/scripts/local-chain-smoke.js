@@ -1,16 +1,25 @@
 /**
- * Local chain smoke: auth → create → start (deploy) → bid → end;
- * also confirms contracts/deployments.json addresses resolve via GET /api/web3/contracts.
+ * Integration / E2E: Create → start (deploy) → bid → end
+ * for English + Dutch (scaffold ready for other types).
  *
- * Prerequisites: hardhat node, redis, postgres, backend on :3001, deploy:local done.
- * Run: node scripts/local-chain-smoke.js  (from contracts/ or repo root)
+ * Prerequisites:
+ *   - Hardhat node on :8545
+ *   - Postgres + Redis
+ *   - Backend on :3001 with PRIVATE_KEY + ETHEREUM_RPC_URL
+ *   - artifacts exported (`npm run compile:artifacts`)
+ *   - optional: `npm run deploy:local` so GET /web3/contracts has code
+ *
+ * Run from contracts/:  npm run e2e:local
+ *   or:                npm run smoke:local
  */
 const path = require('path');
 const { ethers } = require('ethers');
 
 const API = process.env.API_URL || 'http://127.0.0.1:3001/api';
 const RPC = process.env.ETHEREUM_RPC_URL || 'http://127.0.0.1:8545';
+/** Hardhat account #0 (deployer / seller) */
 const PK0 = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+/** Hardhat account #1 (bidder) */
 const PK1 = '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d';
 
 async function req(method, pathSuffix, { token, body } = {}) {
@@ -49,99 +58,11 @@ async function hasCode(provider, addr) {
   return Boolean(code && code !== '0x');
 }
 
-async function placeEnglishBidDirect(provider, contractAddress, bidderPk, amountEth) {
-  const abi = ['function bid() payable', 'function highestBid() view returns (uint256)'];
-  const wallet = new ethers.Wallet(bidderPk, provider);
-  const contract = new ethers.Contract(contractAddress, abi, wallet);
-  const tx = await contract.bid({ value: ethers.parseEther(amountEth) });
-  const receipt = await tx.wait();
-  return receipt.hash;
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
-async function main() {
-  const provider = new ethers.JsonRpcProvider(RPC);
-  const seller = new ethers.Wallet(PK0, provider);
-  const bidder = new ethers.Wallet(PK1, provider);
-
-  console.log('=== 1) Confirm deployments.json addresses resolve ===');
-  const contracts = await req('GET', '/web3/contracts');
-  const entries = Object.entries(contracts);
-  if (!entries.length) throw new Error('GET /web3/contracts returned empty');
-  for (const [name, addr] of entries) {
-    const ok = await hasCode(provider, addr);
-    console.log(`  ${name}: ${addr} => ${ok ? 'HAS CODE' : 'NO CODE'}`);
-    if (!ok) throw new Error(`No code at ${name}`);
-  }
-
-  console.log('=== 2) Auth ===');
-  const sellerToken = await login(seller);
-  const bidderToken = await login(bidder);
-  console.log('  seller:', await seller.getAddress());
-  console.log('  bidder:', await bidder.getAddress());
-
-  console.log('=== 3) Create ENGLISH auction (20s) ===');
-  const auction = await req('POST', '/auctions', {
-    token: sellerToken,
-    body: {
-      title: 'Local smoke English',
-      description: 'Hardhat smoke test',
-      type: 'ENGLISH',
-      biddingTime: 20,
-      reservePrice: '1000000000000000000',
-    },
-  });
-  console.log('  id:', auction.id, 'status:', auction.status);
-
-  console.log('=== 4) Start (deploy-on-start) ===');
-  const started = await req('POST', `/auctions/${auction.id}/start`, { token: sellerToken });
-  console.log('  contractAddress:', started.contractAddress);
-  console.log('  status:', started.status, 'endTime:', started.endTime);
-  if (!(await hasCode(provider, started.contractAddress))) {
-    throw new Error('Started auction has no bytecode');
-  }
-
-  // Brief pause so deploy nonce is fully settled on the node
-  await new Promise((r) => setTimeout(r, 1500));
-
-  console.log('=== 5) Persist bid intent + place on-chain bids ===');
-  // REST /bids validates against *current* contract highest, so record before raising it.
-  const dbBid = await req('POST', `/auctions/${auction.id}/bids`, {
-    token: bidderToken,
-    body: { amount: '2000000000000000000' },
-  });
-  console.log('  db bid (pre-tx):', dbBid.id);
-
-  const txHash = await placeEnglishBidDirect(provider, started.contractAddress, PK1, '2');
-  console.log('  on-chain tx (bidder 2 ETH):', txHash);
-
-  let web3Tx = null;
-  try {
-    const bidTx = await req('POST', `/web3/auction/${started.contractAddress}/bid`, {
-      token: sellerToken,
-      body: { type: 'ENGLISH', amount: '2.5' },
-    });
-    web3Tx = bidTx.transactionHash;
-    console.log('  via /web3 (backend wallet 2.5 ETH):', web3Tx);
-  } catch (e) {
-    console.warn('  /web3 follow-up bid skipped:', e.message);
-  }
-
-  const state = await req(
-    'GET',
-    `/web3/auction/${started.contractAddress}/state?type=ENGLISH`
-  );
-  console.log('  contract state:', JSON.stringify(state));
-
-  console.log('=== 6) Wait for DB endTime + end processor ===');
-  // Processor selects by wall-clock endTime (not Hardhat evm time).
-  const endMs = new Date(started.endTime).getTime();
-  const waitMs = Math.max(0, endMs - Date.now()) + 1500;
-  console.log(`  waiting ${Math.ceil(waitMs / 1000)}s for endTime...`);
-  await new Promise((r) => setTimeout(r, waitMs));
-  // Also advance chain so finalizeAuction() passes auctionEndTime check
-  await provider.send('evm_increaseTime', [60]);
-  await provider.send('evm_mine', []);
-
+async function runEndProcessor() {
   const backendRoot = path.resolve(__dirname, '..', '..', 'backend');
   require('dotenv').config({ path: path.join(backendRoot, '.env') });
   const endProcessorPath = path.join(backendRoot, 'src', 'services', 'auctionEndProcessor.js');
@@ -150,14 +71,101 @@ async function main() {
   delete require.cache[deploymentPath];
   const { run: runEnd } = require(endProcessorPath);
   await runEnd();
+}
 
-  const ended = await req('GET', `/auctions/${auction.id}`);
-  console.log('  final status:', ended.status);
-  console.log('  winner:', ended.winner);
-  console.log('  highestBid:', ended.highestBid);
-  if (ended.status !== 'ENDED') throw new Error(`Expected ENDED, got ${ended.status}`);
+async function assertEnded(auctionId, { expectWinner } = {}) {
+  const ended = await req('GET', `/auctions/${auctionId}`);
+  if (ended.status !== 'ENDED') {
+    throw new Error(`Expected ENDED, got ${ended.status}`);
+  }
+  if (expectWinner) {
+    const winner = (ended.winner || '').toLowerCase();
+    if (winner !== expectWinner.toLowerCase()) {
+      throw new Error(`Expected winner ${expectWinner}, got ${ended.winner}`);
+    }
+  }
+  return ended;
+}
 
-  const eng = new ethers.Contract(
+async function confirmDeploymentsResolve(provider) {
+  console.log('=== Shared: deployments.json addresses resolve ===');
+  const contracts = await req('GET', '/web3/contracts');
+  const entries = Object.entries(contracts);
+  if (!entries.length) {
+    console.warn('  GET /web3/contracts empty (ok if deploy:local not run; per-auction deploy still tested)');
+    return;
+  }
+  for (const [name, addr] of entries) {
+    const ok = await hasCode(provider, addr);
+    console.log(`  ${name}: ${addr} => ${ok ? 'HAS CODE' : 'NO CODE'}`);
+    if (!ok) throw new Error(`No code at ${name}`);
+  }
+}
+
+/**
+ * English: create → start → REST bid + on-chain bid → wait endTime → end processor → ENDED
+ */
+async function flowEnglish({ provider, sellerToken, bidderToken, bidderAddress }) {
+  console.log('\n========== ENGLISH: create → start → bid → end ==========');
+
+  const auction = await req('POST', '/auctions', {
+    token: sellerToken,
+    body: {
+      title: 'E2E English',
+      description: 'Integration create/start/bid/end',
+      type: 'ENGLISH',
+      biddingTime: 20,
+      reservePrice: '1000000000000000000',
+    },
+  });
+  console.log('  created:', auction.id, auction.status);
+
+  const started = await req('POST', `/auctions/${auction.id}/start`, { token: sellerToken });
+  console.log('  started:', started.contractAddress, started.status);
+  if (!(await hasCode(provider, started.contractAddress))) {
+    throw new Error('English: started auction has no bytecode');
+  }
+  await sleep(1500);
+
+  // REST /bids validates against *current* contract highest, so record before raising it.
+  const dbBid = await req('POST', `/auctions/${auction.id}/bids`, {
+    token: bidderToken,
+    body: { amount: '2000000000000000000' },
+  });
+  console.log('  db bid:', dbBid.id);
+
+  const engAbi = ['function bid() payable', 'function highestBid() view returns (uint256)'];
+  const bidderWallet = new ethers.Wallet(PK1, provider);
+  const eng = new ethers.Contract(started.contractAddress, engAbi, bidderWallet);
+  const tx = await eng.bid({ value: ethers.parseEther('2') });
+  const receipt = await tx.wait();
+  console.log('  on-chain bid tx:', receipt.hash);
+
+  try {
+    const bidTx = await req('POST', `/web3/auction/${started.contractAddress}/bid`, {
+      token: sellerToken,
+      body: { type: 'ENGLISH', amount: '2.5' },
+    });
+    console.log('  /web3 follow-up bid:', bidTx.transactionHash);
+  } catch (e) {
+    console.warn('  /web3 follow-up bid skipped:', e.message);
+  }
+
+  const state = await req('GET', `/web3/auction/${started.contractAddress}/state?type=ENGLISH`);
+  console.log('  contract state:', JSON.stringify(state));
+
+  const endMs = new Date(started.endTime).getTime();
+  const waitMs = Math.max(0, endMs - Date.now()) + 1500;
+  console.log(`  waiting ${Math.ceil(waitMs / 1000)}s for endTime...`);
+  await sleep(waitMs);
+  await provider.send('evm_increaseTime', [60]);
+  await provider.send('evm_mine', []);
+
+  await runEndProcessor();
+  const ended = await assertEnded(auction.id);
+  console.log('  final status:', ended.status, 'winner:', ended.winner);
+
+  const onChain = new ethers.Contract(
     started.contractAddress,
     [
       'function ended() view returns (bool)',
@@ -166,14 +174,121 @@ async function main() {
     ],
     provider
   );
-  console.log('  on-chain ended:', await eng.ended());
-  console.log('  on-chain highestBidder:', await eng.highestBidder());
-  console.log('  on-chain highestBid:', (await eng.highestBid()).toString());
+  const onChainEnded = await onChain.ended();
+  const onChainBidder = await onChain.highestBidder();
+  console.log('  on-chain ended:', onChainEnded);
+  console.log('  on-chain highestBidder:', onChainBidder);
+  if (!onChainEnded) throw new Error('English: contract not finalized');
+  if (!ended.winner || ended.winner.toLowerCase() !== onChainBidder.toLowerCase()) {
+    throw new Error(`English: DB winner ${ended.winner} != on-chain ${onChainBidder}`);
+  }
+  console.log('ENGLISH OK');
+}
 
-  console.log('\nSMOKE OK');
+/**
+ * Dutch: create → start → REST bid + on-chain buy → end processor (contract-ended) → ENDED
+ * Buy settles immediately on-chain; end processor picks up contract.ended without waiting endTime.
+ */
+async function flowDutch({ provider, sellerToken, bidderToken, bidderAddress }) {
+  console.log('\n========== DUTCH: create → start → bid → end ==========');
+
+  // start 2 ETH, reserve 1 ETH; duration >= priceDropInterval (Solidity division)
+  const startPriceWei = '2000000000000000000';
+  const auction = await req('POST', '/auctions', {
+    token: sellerToken,
+    body: {
+      title: 'E2E Dutch',
+      description: 'Integration create/start/bid/end',
+      type: 'DUTCH',
+      startPrice: startPriceWei,
+      reservePrice: '1000000000000000000',
+      duration: 60,
+      priceDropInterval: 10,
+    },
+  });
+  console.log('  created:', auction.id, auction.status);
+
+  const started = await req('POST', `/auctions/${auction.id}/start`, { token: sellerToken });
+  console.log('  started:', started.contractAddress, started.status);
+  if (!(await hasCode(provider, started.contractAddress))) {
+    throw new Error('Dutch: started auction has no bytecode');
+  }
+  await sleep(1500);
+
+  const priceState = await req('GET', `/web3/auction/${started.contractAddress}/state?type=DUTCH`);
+  console.log('  current price state:', JSON.stringify(priceState));
+
+  const dbBid = await req('POST', `/auctions/${auction.id}/bids`, {
+    token: bidderToken,
+    body: { amount: startPriceWei },
+  });
+  console.log('  db bid:', dbBid.id);
+
+  const dutchAbi = [
+    'function buy() payable',
+    'function ended() view returns (bool)',
+    'function winner() view returns (address)',
+    'function getCurrentPrice() view returns (uint256)',
+  ];
+  const bidderWallet = new ethers.Wallet(PK1, provider);
+  const dutch = new ethers.Contract(started.contractAddress, dutchAbi, bidderWallet);
+  const currentPrice = await dutch.getCurrentPrice();
+  const tx = await dutch.buy({ value: currentPrice });
+  const receipt = await tx.wait();
+  console.log('  on-chain buy tx:', receipt.hash);
+  console.log('  on-chain ended:', await dutch.ended(), 'winner:', await dutch.winner());
+
+  // Contract already ended via buy(); processor should mark DB ENDED without waiting wall-clock endTime
+  await sleep(500);
+  await runEndProcessor();
+  const ended = await assertEnded(auction.id, { expectWinner: bidderAddress });
+  console.log('  final status:', ended.status, 'winner:', ended.winner);
+  console.log('DUTCH OK');
+}
+
+/**
+ * Placeholder for remaining types — keep listed so the suite is easy to extend.
+ * Each should follow: create → start → type-specific bid/reveal → end.
+ */
+const FUTURE_FLOWS = [
+  'SEALED_BID',
+  'HOLD_TO_COMPETE',
+  'PLAYABLE',
+  'RANDOM_SELECTION',
+  'ORDER_BOOK',
+];
+
+async function main() {
+  const provider = new ethers.JsonRpcProvider(RPC);
+  const seller = new ethers.Wallet(PK0, provider);
+  const bidder = new ethers.Wallet(PK1, provider);
+  const bidderAddress = await bidder.getAddress();
+
+  console.log('=== Integration / E2E (English + Dutch) ===');
+  console.log('  API:', API);
+  console.log('  RPC:', RPC);
+
+  await confirmDeploymentsResolve(provider);
+
+  console.log('\n=== Auth ===');
+  const sellerToken = await login(seller);
+  const bidderToken = await login(bidder);
+  console.log('  seller:', await seller.getAddress());
+  console.log('  bidder:', bidderAddress);
+
+  const ctx = { provider, sellerToken, bidderToken, bidderAddress };
+  await flowEnglish(ctx);
+  await flowDutch(ctx);
+
+  console.log('\n=== Deferred types (not yet in this suite) ===');
+  for (const t of FUTURE_FLOWS) {
+    console.log(`  [ ] ${t}`);
+  }
+
+  console.log('\nE2E OK (English + Dutch)');
 }
 
 main().catch((e) => {
-  console.error('SMOKE FAILED:', e.message);
+  console.error('E2E FAILED:', e.message);
   process.exit(1);
 });

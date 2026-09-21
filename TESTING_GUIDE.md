@@ -284,15 +284,19 @@ Open browser DevTools (F12) and check:
 3. **API Calls** - Check Network tab for API requests
 4. **Web3 Connection** - Check for wallet connection logs
 
-## Next Steps After Testing
+## Integration / E2E (English + Dutch)
 
-Once basic testing is complete:
+Automated create → start (deploy) → bid → end against a local stack:
 
-1. ✅ Fix any UI/UX issues found
-2. ✅ Implement proper authentication
-3. ✅ Connect to deployed smart contracts
-4. ✅ Test with real blockchain transactions
-5. ✅ Test all 7 auction types end-to-end
+```bash
+# Terminals: hardhat node, postgres, redis, backend (port 3001)
+cd contracts
+npm run compile:artifacts   # once, if needed
+npm run deploy:local        # optional; checks /web3/contracts addresses
+npm run e2e:local           # alias: smoke:local
+```
+
+Covers **ENGLISH** and **DUTCH**. Other types are listed as deferred in the script output.
 
 ## Reporting Issues
 

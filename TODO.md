@@ -28,7 +28,7 @@ A full-stack Ethereum auction platform with seven auction types, wallet auth, on
 **Not in scope / not built**
 
 - Admin UI, fiat payments, email/push notifications
-- Full E2E coverage
+- Full E2E for all 7 types (English + Dutch covered via `npm run e2e:local`)
 
 **Ops gotchas (local)**
 
@@ -73,7 +73,7 @@ See also: `ISSUES_AND_TODO.md`, `QUICK_TEST.md`, `TESTING_GUIDE.md`, `backend/SE
 
 - [x] **HoldToCompete contract tests** – Cover in `contracts/test/`
 - [x] **Deeper frontend tests** – BiddingInterface, AuctionCreationForm, sealed reveal
-- [ ] **Integration / E2E** – Create → start (deploy) → bid → end for at least Dutch + English, then others
+- [x] **Integration / E2E** – Create → start (deploy) → bid → end for Dutch + English (`contracts/` `npm run e2e:local`); other types still deferred
 
 ### Docs & deploy prep
 
