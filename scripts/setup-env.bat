@@ -27,7 +27,8 @@ echo.
 echo # Blockchain
 echo ETHEREUM_RPC_URL=http://localhost:8545
 echo PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-echo CONTRACT_ADDRESSES_JSON=./contracts/deployments.json
+echo # Relative to process cwd when the API starts (usually backend/)
+echo CONTRACT_ADDRESSES_JSON=../contracts/deployments.json
 echo.
 echo # Logging
 echo LOG_LEVEL=info

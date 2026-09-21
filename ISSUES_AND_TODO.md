@@ -22,7 +22,7 @@
 **Local blockers to watch**
 
 - ~~Backend deploy needs `backend/src/contracts/artifacts/`~~ → run `npm run compile:artifacts` in `contracts/` (done locally; dir is gitignored)
-- `web3` deployments path expects `backend/contracts/deployments.json`; file lives at repo-root `contracts/deployments.json`
+- ~~`web3` deployments path~~ → `resolveDeploymentsPath()` + `CONTRACT_ADDRESSES_JSON=../contracts/deployments.json`
 
 ---
 
@@ -41,7 +41,7 @@
 | 7 | ~~**Contract ABIs not used**~~ | `frontend/` & `backend/` `src/contracts/abis/` | Resolved: ABIs exported and wired. |
 | 8 | ~~**Frontend contract integration partial**~~ | `BiddingInterface.tsx` | Resolved: all 7 types use contracts. |
 | 9 | ~~**Backend artifacts missing**~~ | `backend/src/contracts/artifacts/` | Resolved: 8 artifacts exported (ABI + bytecode); export script path fixed to `artifacts/src/`. |
-| 10 | **deployments.json path mismatch** | `backend/src/routes/web3.js` | `GET /api/web3/contracts` reads wrong relative path vs repo-root `contracts/deployments.json`. |
+| 10 | ~~**deployments.json path mismatch**~~ | `backend/src/routes/web3.js` | Resolved: `resolveDeploymentsPath()` + env points at repo-root `contracts/deployments.json`. |
 
 ### Medium priority
 
@@ -49,7 +49,7 @@
 |---|--------|----------|--------|
 | 11 | ~~Missing env files~~ | Root packages | Resolved: `backend/.env`, `frontend/.env.local`, `contracts/.env` present (still need real secrets per machine). |
 | 12 | ~~Migrations not run~~ | `backend/prisma/migrations/` | Resolved: init migration exists; apply with `prisma migrate`. |
-| 13 | **Local deploy / address wiring fragile** | `contracts/deployments.json` | File may exist, but backend path + artifacts must be fixed for a reliable smoke path. |
+| 13 | **Local deploy / address wiring fragile** | `contracts/deployments.json` | Path + artifacts resolved; still need a live local deploy smoke to confirm end-to-end. |
 | 14 | ~~Sealed bid reveal incomplete~~ | Frontend + backend | Resolved: reveal endpoint + UI + contract reveal. |
 | 15 | ~~No auction end processing~~ | `auctionEndProcessor.js` | Resolved: cron marks ENDED and runs winner/payout hooks. |
 | 16 | **Notifications incomplete** | Backend | In-app + socket only; no email/push. |
@@ -88,7 +88,7 @@
 - [x] **Create env files** – Backend, contracts, frontend local env present.
 - [x] **Run Prisma migrations** – Init migration under `backend/prisma/migrations/`.
 - [x] **Compile backend artifacts** – `npm run compile:artifacts` in `contracts/` (export path fixed to `artifacts/src/`).
-- [ ] **Fix deployments.json path** – Align `web3.js` with repo-root (or copy file).
+- [x] **Fix deployments.json path** – `web3.js` uses `resolveDeploymentsPath()`; env/setup scripts point at repo-root `contracts/deployments.json`.
 - [ ] **Deploy contracts locally** – Hardhat node + deploy; verify backend can resolve addresses and start auctions.
 
 ### Phase 3 – Missing features
@@ -111,4 +111,4 @@
 
 ---
 
-*Source: codebase review vs prior APPLICATION_STATUS / TODO docs. Last updated: 2026-09-20.*
+*Source: codebase review vs prior APPLICATION_STATUS / TODO docs. Last updated: 2026-09-21.*

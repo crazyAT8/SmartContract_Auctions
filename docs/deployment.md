@@ -241,7 +241,7 @@ JWT_EXPIRES_IN=7d
 # Blockchain
 ETHEREUM_RPC_URL=https://mainnet.infura.io/v3/YOUR_INFURA_KEY
 PRIVATE_KEY=your_private_key_here
-CONTRACT_ADDRESSES_JSON=./contracts/deployments.json
+CONTRACT_ADDRESSES_JSON=../contracts/deployments.json
 
 # Logging
 LOG_LEVEL=info
