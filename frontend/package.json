@@ -7,6 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "smoke:prod": "node scripts/prod-smoke.js",
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",

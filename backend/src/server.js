@@ -9,7 +9,7 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
 
-const { validateEnv } = require('./config/validateEnv');
+const { validateEnv, isLocalProdSmoke } = require('./config/validateEnv');
 const auctionRoutes = require('./routes/auctions');
 const userRoutes = require('./routes/users');
 const web3Routes = require('./routes/web3');
@@ -104,7 +104,11 @@ setupSocketHandlers(io);
 async function startServer() {
   try {
     // Refuse known dev secrets / localhost RPC when NODE_ENV=production
+    // (ALLOW_LOCAL_PROD_SMOKE=1 relaxes locality checks for laptop smoke only)
     validateEnv();
+    if (isLocalProdSmoke()) {
+      logger.warn('ALLOW_LOCAL_PROD_SMOKE is set — not safe for a real production deploy');
+    }
     logger.info('Environment validation passed');
 
     // Connect to database

@@ -130,6 +130,23 @@ Production must use **real** DB, Redis, RPC, and contract addresses — never Ha
    cd frontend && npm run build && npm start
    ```
 
+### Local build & smoke (laptop)
+
+Confirms the **production entrypoints** work before Docker/real deploy. Uses local
+Postgres/Redis/Hardhat via `ALLOW_LOCAL_PROD_SMOKE=1` (never set on a real host).
+
+```bash
+# Frontend: production build + next start → GET /
+cd frontend && npm run build && npm run smoke:prod
+
+# Backend: NODE_ENV=production + npm start → GET /health
+# (requires DB/Redis up; uses backend/.env)
+cd backend && npm run smoke:prod
+```
+
+Real go-live still needs filled `env.production.example` values and
+`NODE_ENV=production npm run check:prod-env` **without** `ALLOW_LOCAL_PROD_SMOKE`.
+
 ### Using Docker Compose (production overlay)
 
 ```bash

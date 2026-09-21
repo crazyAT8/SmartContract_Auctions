@@ -117,6 +117,17 @@ function isLocalAppUrl(url) {
 }
 
 /**
+ * True when intentionally smoking the production process against local infra.
+ * Never set in a real deploy. Skips "must not be localhost/Hardhat" checks only.
+ * @param {NodeJS.ProcessEnv} [env]
+ * @returns {boolean}
+ */
+function isLocalProdSmoke(env = process.env) {
+  const v = String(env.ALLOW_LOCAL_PROD_SMOKE || '').trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes';
+}
+
+/**
  * Collect production env problems. Does not throw.
  * @param {NodeJS.ProcessEnv} [env]
  * @param {{ deploymentsPath?: string, readFileSync?: typeof fs.readFileSync }} [opts]
@@ -125,6 +136,7 @@ function isLocalAppUrl(url) {
 function collectProductionEnvErrors(env = process.env, opts = {}) {
   const errors = [];
   const readFile = opts.readFileSync || fs.readFileSync;
+  const localSmoke = isLocalProdSmoke(env);
 
   const required = [
     'DATABASE_URL',
@@ -142,47 +154,53 @@ function collectProductionEnvErrors(env = process.env, opts = {}) {
 
   const jwt = String(env.JWT_SECRET || '').trim();
   if (jwt && (PLACEHOLDER_SECRETS.has(jwt) || jwt.length < 32)) {
-    errors.push(
-      'JWT_SECRET must be a unique secret at least 32 characters (not a placeholder or test value)'
-    );
+    if (!localSmoke) {
+      errors.push(
+        'JWT_SECRET must be a unique secret at least 32 characters (not a placeholder or test value)'
+      );
+    } else if (jwt.length < 8) {
+      errors.push('JWT_SECRET is required for local prod smoke (min 8 characters)');
+    }
   }
 
   const pk = String(env.PRIVATE_KEY || '').trim();
   const pkNorm = normalizePrivateKey(pk);
   if (pk && (PLACEHOLDER_PRIVATE_KEYS.has(pk) || PLACEHOLDER_PRIVATE_KEYS.has(pkNorm))) {
     errors.push('PRIVATE_KEY is a placeholder; set a dedicated production deployer key');
-  } else if (pkNorm && HARDHAT_DEFAULT_PRIVATE_KEYS.has(pkNorm)) {
+  } else if (!localSmoke && pkNorm && HARDHAT_DEFAULT_PRIVATE_KEYS.has(pkNorm)) {
     errors.push(
       'PRIVATE_KEY is a well-known Hardhat/Anvil default key — never use these in production'
     );
   }
 
-  if (env.ETHEREUM_RPC_URL && isLocalRpcUrl(env.ETHEREUM_RPC_URL)) {
+  if (!localSmoke && env.ETHEREUM_RPC_URL && isLocalRpcUrl(env.ETHEREUM_RPC_URL)) {
     errors.push(
       `ETHEREUM_RPC_URL must be a public/testnet/mainnet RPC, not local/Hardhat (${env.ETHEREUM_RPC_URL})`
     );
   }
 
-  if (env.FRONTEND_URL && isLocalAppUrl(env.FRONTEND_URL)) {
+  if (!localSmoke && env.FRONTEND_URL && isLocalAppUrl(env.FRONTEND_URL)) {
     errors.push(
       `FRONTEND_URL must be the public app origin in production (got ${env.FRONTEND_URL})`
     );
   }
 
   const dbUrl = String(env.DATABASE_URL || '');
-  if (
-    dbUrl.includes('postgres:postgres@') ||
-    (/localhost|127\.0\.0\.1/.test(dbUrl) && /:postgres@/.test(dbUrl))
-  ) {
-    errors.push(
-      'DATABASE_URL looks like a local default (postgres/postgres or localhost) — use a production database'
-    );
-  } else if (/localhost|127\.0\.0\.1/.test(dbUrl)) {
-    errors.push('DATABASE_URL points at localhost — use a production database host');
+  if (!localSmoke) {
+    if (
+      dbUrl.includes('postgres:postgres@') ||
+      (/localhost|127\.0\.0\.1/.test(dbUrl) && /:postgres@/.test(dbUrl))
+    ) {
+      errors.push(
+        'DATABASE_URL looks like a local default (postgres/postgres or localhost) — use a production database'
+      );
+    } else if (/localhost|127\.0\.0\.1/.test(dbUrl)) {
+      errors.push('DATABASE_URL points at localhost — use a production database host');
+    }
   }
 
   const redisHost = String(env.REDIS_HOST || '').toLowerCase();
-  if (redisHost === 'localhost' || redisHost === '127.0.0.1') {
+  if (!localSmoke && (redisHost === 'localhost' || redisHost === '127.0.0.1')) {
     errors.push('REDIS_HOST points at localhost — use a production Redis host');
   }
 
@@ -193,10 +211,11 @@ function collectProductionEnvErrors(env = process.env, opts = {}) {
     const networkName = String(deployments?.network?.name || '').toLowerCase();
     const chainId = String(deployments?.network?.chainId || '');
     if (
-      networkName === 'localhost' ||
-      networkName === 'hardhat' ||
-      chainId === '1337' ||
-      chainId === '31337'
+      !localSmoke &&
+      (networkName === 'localhost' ||
+        networkName === 'hardhat' ||
+        chainId === '1337' ||
+        chainId === '31337')
     ) {
       errors.push(
         `Contract deployments at ${deploymentsPath} are for local Hardhat (network=${networkName || '?'}, chainId=${chainId || '?'}); deploy to the target network and update the file`
@@ -245,5 +264,6 @@ module.exports = {
   normalizePrivateKey,
   isLocalRpcUrl,
   isLocalAppUrl,
+  isLocalProdSmoke,
   HARDHAT_DEFAULT_PRIVATE_KEYS,
 };

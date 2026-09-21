@@ -103,4 +103,44 @@ describe('validateEnv', () => {
       )
     ).toThrow(/Production environment validation failed/);
   });
+
+  it('ALLOW_LOCAL_PROD_SMOKE skips localhost/Hardhat locality checks', () => {
+    const hh0 = [...HARDHAT_DEFAULT_PRIVATE_KEYS][0];
+    const errors = collectProductionEnvErrors(
+      {
+        NODE_ENV: 'production',
+        ALLOW_LOCAL_PROD_SMOKE: '1',
+        DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/auction_dapp',
+        JWT_SECRET: 'local-smoke-jwt-secret-at-least-32-chars',
+        REDIS_HOST: 'localhost',
+        ETHEREUM_RPC_URL: 'http://localhost:8545',
+        PRIVATE_KEY: '0x' + hh0,
+        FRONTEND_URL: 'http://localhost:3000',
+      },
+      {
+        readFileSync: mockRead(LOCAL_DEPLOYMENTS),
+        deploymentsPath: '/tmp/deployments.json',
+      }
+    );
+    expect(errors).toEqual([]);
+  });
+
+  it('ALLOW_LOCAL_PROD_SMOKE still requires non-placeholder PRIVATE_KEY', () => {
+    const errors = collectProductionEnvErrors(
+      {
+        ...validProdEnv,
+        ALLOW_LOCAL_PROD_SMOKE: '1',
+        PRIVATE_KEY: 'your_private_key_here',
+        DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/auction_dapp',
+        REDIS_HOST: 'localhost',
+        ETHEREUM_RPC_URL: 'http://localhost:8545',
+        FRONTEND_URL: 'http://localhost:3000',
+      },
+      {
+        readFileSync: mockRead(LOCAL_DEPLOYMENTS),
+        deploymentsPath: '/tmp/deployments.json',
+      }
+    );
+    expect(errors.some((e) => e.includes('placeholder'))).toBe(true);
+  });
 });

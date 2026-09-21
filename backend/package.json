@@ -13,7 +13,8 @@
     "migrate:prod": "npx prisma migrate deploy",
     "generate": "npx prisma generate",
     "studio": "npx prisma studio",
-    "check:prod-env": "node scripts/check-prod-env.js"
+    "check:prod-env": "node scripts/check-prod-env.js",
+    "smoke:prod": "node scripts/prod-smoke.js"
   },
   "dependencies": {
     "@prisma/client": "^5.7.0",
