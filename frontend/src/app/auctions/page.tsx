@@ -1,8 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
 import { AuctionFilters } from '@/components/auctions/AuctionFilters'
 import { AuctionCard } from '@/components/auctions/AuctionCard'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
@@ -101,82 +99,74 @@ export default function AuctionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-
-      <main className="py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Page Header */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">All Auctions</h1>
-            <p className="text-xl text-gray-600">
-              Discover and participate in decentralized auctions
-            </p>
-          </div>
-
-          {/* Filters */}
-          <ErrorBoundary
-            title="Filters failed"
-            description="Could not render auction filters. Try refreshing the page."
-          >
-            <AuctionFilters filters={filters} onFiltersChange={handleFiltersChange} />
-          </ErrorBoundary>
-
-          <ErrorBoundary
-            resetKeys={[currentPage, filters.search, filters.type, filters.status]}
-            title="Auction list failed"
-            description="Could not render the auction list. Try again."
-          >
-            <AsyncState
-              loading={loading}
-              error={error}
-              onRetry={fetchAuctions}
-              loadingLabel="Loading auctions..."
-            >
-              {auctions.length > 0 ? (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-                    {auctions.map((auction) => (
-                      <AuctionCard key={auction.id} auction={auction} />
-                    ))}
-                  </div>
-
-                  {pagination && pagination.pages > 1 && (
-                    <div className="flex justify-center items-center gap-2">
-                      <button
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-                      >
-                        Previous
-                      </button>
-
-                      <div className="px-4 py-2 text-gray-700">
-                        Page {currentPage} of {pagination.pages}
-                      </div>
-
-                      <button
-                        onClick={() => setCurrentPage(p => Math.min(pagination.pages, p + 1))}
-                        disabled={currentPage === pagination.pages}
-                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-gray-500 text-lg">No auctions found</p>
-                  <p className="text-gray-400 mt-2">Try adjusting your filters</p>
-                </div>
-              )}
-            </AsyncState>
-          </ErrorBoundary>
+    <div className="py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">All Auctions</h1>
+          <p className="text-xl text-gray-600">
+            Discover and participate in decentralized auctions
+          </p>
         </div>
-      </main>
 
-      <Footer />
+        <ErrorBoundary
+          title="Filters failed"
+          description="Could not render auction filters. Try refreshing the page."
+        >
+          <AuctionFilters filters={filters} onFiltersChange={handleFiltersChange} />
+        </ErrorBoundary>
+
+        <ErrorBoundary
+          resetKeys={[currentPage, filters.search, filters.type, filters.status]}
+          title="Auction list failed"
+          description="Could not render the auction list. Try again."
+        >
+          <AsyncState
+            loading={loading}
+            error={error}
+            onRetry={fetchAuctions}
+            loadingLabel="Loading auctions..."
+          >
+            {auctions.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+                  {auctions.map((auction) => (
+                    <AuctionCard key={auction.id} auction={auction} />
+                  ))}
+                </div>
+
+                {pagination && pagination.pages > 1 && (
+                  <div className="flex justify-center items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                    >
+                      Previous
+                    </button>
+
+                    <div className="px-4 py-2 text-gray-700">
+                      Page {currentPage} of {pagination.pages}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(pagination.pages, p + 1))}
+                      disabled={currentPage === pagination.pages}
+                      className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-500 text-lg">No auctions found</p>
+                <p className="text-gray-400 mt-2">Try adjusting your filters</p>
+              </div>
+            )}
+          </AsyncState>
+        </ErrorBoundary>
+      </div>
     </div>
   )
 }

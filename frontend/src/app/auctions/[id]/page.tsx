@@ -3,8 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { AsyncState } from '@/components/ui/AsyncState'
 import { AuctionDetails } from '@/components/auctions/AuctionDetails'
@@ -147,12 +145,27 @@ export default function AuctionDetailPage() {
 
   if (loading || error || notFound || !auction) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <main className="flex justify-center items-center min-h-[60vh] px-4">
-          {notFound ? (
+      <div className="flex justify-center items-center min-h-[60vh] px-4">
+        {notFound ? (
+          <div className="text-center">
+            <p className="text-gray-500 text-lg mb-4">Auction not found</p>
+            <button
+              onClick={() => router.push('/auctions')}
+              className="btn-primary"
+            >
+              Back to Auctions
+            </button>
+          </div>
+        ) : (
+          <AsyncState
+            loading={loading}
+            error={error}
+            onRetry={() => void fetchAuction()}
+            loadingLabel="Loading auction..."
+            className="w-full max-w-md"
+          >
             <div className="text-center">
-              <p className="text-gray-500 text-lg mb-4">Auction not found</p>
+              <p className="text-gray-500 text-lg mb-4">Auction unavailable</p>
               <button
                 onClick={() => router.push('/auctions')}
                 className="btn-primary"
@@ -160,27 +173,8 @@ export default function AuctionDetailPage() {
                 Back to Auctions
               </button>
             </div>
-          ) : (
-            <AsyncState
-              loading={loading}
-              error={error}
-              onRetry={() => void fetchAuction()}
-              loadingLabel="Loading auction..."
-              className="w-full max-w-md"
-            >
-              <div className="text-center">
-                <p className="text-gray-500 text-lg mb-4">Auction unavailable</p>
-                <button
-                  onClick={() => router.push('/auctions')}
-                  className="btn-primary"
-                >
-                  Back to Auctions
-                </button>
-              </div>
-            </AsyncState>
-          )}
-        </main>
-        <Footer />
+          </AsyncState>
+        )}
       </div>
     )
   }
@@ -190,11 +184,8 @@ export default function AuctionDetailPage() {
   const isEnded = auction.status === 'ENDED' || auction.status === 'CANCELLED'
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      
-      <main className="py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Back Button */}
           <button
             onClick={() => router.back()}
@@ -377,10 +368,7 @@ export default function AuctionDetailPage() {
               )}
             </div>
           </div>
-        </div>
-      </main>
-      
-      <Footer />
+      </div>
     </div>
   )
 }

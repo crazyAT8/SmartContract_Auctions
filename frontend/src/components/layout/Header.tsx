@@ -15,8 +15,6 @@ export function Header() {
   const navigation = [
     { name: 'Auctions', href: '/auctions' },
     { name: 'Create', href: '/create' },
-    { name: 'My Auctions', href: '/my-auctions' },
-    { name: 'My Bids', href: '/my-bids' },
   ]
 
   return (

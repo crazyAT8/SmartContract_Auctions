@@ -14,8 +14,9 @@
 | Sealed reveal + end-processing cron | Implemented |
 | In-app notifications + Socket.IO | Implemented (no email/push) |
 | Env files + Prisma migrations | Present; prod templates + `validateEnv` guard |
+| OpenAPI / Swagger | Implemented (`GET /api/docs`, `/api/docs.json`) |
 | Tests | Baseline + English/Dutch E2E (`e2e:local`); other types deferred |
-| Admin / fiat payments / OpenAPI | Not built |
+| Admin / fiat payments | Not built |
 
 **Stack snapshot:** Frontend uses custom MetaMask/`Web3Context` (ethers), not RainbowKit. Backend: PostgreSQL, Redis, Socket.IO. Money is on-chain ETH (ERC20 for hold-to-compete).
 
@@ -23,6 +24,7 @@
 
 - ~~Backend deploy needs `backend/src/contracts/artifacts/`~~ → run `npm run compile:artifacts` in `contracts/` (done locally; dir is gitignored)
 - ~~`web3` deployments path~~ → `resolveDeploymentsPath()` + `CONTRACT_ADDRESSES_JSON=../contracts/deployments.json`
+- ~~Local deploy smoke~~ → `contracts/scripts/local-chain-smoke.js` via `npm run e2e:local` / `smoke:local`
 
 ---
 
@@ -49,7 +51,7 @@
 |---|--------|----------|--------|
 | 11 | ~~Missing env files~~ | Root packages | Resolved: `backend/.env`, `frontend/.env.local`, `contracts/.env` present (still need real secrets per machine). |
 | 12 | ~~Migrations not run~~ | `backend/prisma/migrations/` | Resolved: init migration exists; apply with `prisma migrate`. |
-| 13 | **Local deploy / address wiring fragile** | `contracts/deployments.json` | Path + artifacts resolved; still need a live local deploy smoke to confirm end-to-end. |
+| 13 | ~~**Local deploy / address wiring fragile**~~ | `contracts/deployments.json` | Resolved: path + artifacts + `local-chain-smoke.js` (`e2e:local` / `smoke:local`) confirm addresses resolve. |
 | 14 | ~~Sealed bid reveal incomplete~~ | Frontend + backend | Resolved: reveal endpoint + UI + contract reveal. |
 | 15 | ~~No auction end processing~~ | `auctionEndProcessor.js` | Resolved: cron marks ENDED and runs winner/payout hooks. |
 | 16 | **Notifications incomplete** | Backend | In-app + socket only; no email/push. |
@@ -61,11 +63,11 @@
 | # | Issue | Location | Impact |
 |---|--------|----------|--------|
 | 19 | ~~**Test coverage thin**~~ | All dirs | Route/unit + HoldToCompete contract tests; English/Dutch E2E via `npm run e2e:local`. Remaining types still open. |
-| 20 | **No API docs** | Root | No Swagger/OpenAPI. |
-| 21 | **No error boundaries** | Frontend | Full app crash on uncaught React errors. |
-| 22 | **Incomplete types** | `frontend/src/` | Remaining `any` reduces type safety. |
+| 20 | ~~**No API docs**~~ | Backend | Resolved: OpenAPI + Swagger UI at `GET /api/docs` and `/api/docs.json`. |
+| 21 | ~~**No error boundaries**~~ | Frontend | Resolved: `error.tsx`, `global-error.tsx`, section `ErrorBoundary`. |
+| 22 | ~~**Incomplete types**~~ | `frontend/src/` | Resolved: no remaining `any` / `as any` under `frontend/src/` (`strict` still off in tsconfig). |
 | 23 | ~~**Missing loading states**~~ | Various frontend | Resolved: AsyncState + toast loading/retry on fetches and tx/API actions. |
-| 24 | **Root README / demo drift** | Root `README.md`, `app/` | Docs and root demo describe Wagmi/RainbowKit; product UI is `frontend/`. |
+| 24 | ~~**Root README / demo drift**~~ | Root `README.md`, `app/` | Resolved: README documents `frontend/` + Express as primary; root Wagmi demo marked legacy. |
 | 25 | **No admin / fiat** | — | Out of current scope. |
 
 ---
@@ -89,7 +91,7 @@
 - [x] **Run Prisma migrations** – Init migration under `backend/prisma/migrations/`.
 - [x] **Compile backend artifacts** – `npm run compile:artifacts` in `contracts/` (export path fixed to `artifacts/src/`).
 - [x] **Fix deployments.json path** – `web3.js` uses `resolveDeploymentsPath()`; env/setup scripts point at repo-root `contracts/deployments.json`.
-- [ ] **Deploy contracts locally** – Hardhat node + deploy; verify backend can resolve addresses and start auctions.
+- [x] **Deploy contracts locally** – Hardhat node + deploy smoke via `contracts/scripts/local-chain-smoke.js` (`npm run e2e:local`).
 
 ### Phase 3 – Missing features
 
@@ -102,13 +104,15 @@
 
 - [x] **Write baseline tests** – Backend routes, frontend components, most contract types.
 - [x] **Expand tests** – BiddingInterface, AuctionCreationForm, SealedBidReveal; HoldToCompete contract tests; English + Dutch E2E (`e2e:local`).
-- [ ] **Add API documentation** – Swagger/OpenAPI.
-- [ ] **Add error boundaries** – React error boundaries in frontend.
-- [ ] **Tighten TypeScript** – Replace remaining `any`.
+- [x] **Add API documentation** – Swagger/OpenAPI at `/api/docs` and `/api/docs.json`.
+- [x] **Add error boundaries** – `error.tsx`, `global-error.tsx`, section `ErrorBoundary`.
+- [x] **Tighten TypeScript** – Replaced remaining `any` in `frontend/src/` (`strict` still optional follow-up).
 - [x] **Add loading states** – Remaining async operations.
-- [ ] **Update root README** – Point to `frontend/` + Express as primary app.
+- [x] **Update root README** – Points to `frontend/` + Express as primary app.
 - [ ] **Email/push notifications** (optional) – Beyond in-app.
+- [ ] **Admin tooling** (optional) – Moderate auctions / users if needed.
+- [ ] **E2E for remaining auction types** (optional) – Sealed, hold-to-compete, playable, random, order-book still deferred.
 
 ---
 
-*Source: codebase review vs prior APPLICATION_STATUS / TODO docs. Last updated: 2026-09-21.*
+*Source: codebase review vs prior APPLICATION_STATUS / TODO docs. Synced with `TODO.md`. Last updated: 2026-09-21.*
