@@ -319,26 +319,26 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
           {isOrderBook ? (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Side</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Side</label>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setOrderBookSide('buy')}
-                    className={`flex-1 py-2 px-3 rounded-lg border ${orderBookSide === 'buy' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-300'}`}
+                    className={`flex-1 py-2 px-3 rounded-lg border ${orderBookSide === 'buy' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-300 dark:border-secondary-600'}`}
                   >
                     Buy
                   </button>
                   <button
                     type="button"
                     onClick={() => setOrderBookSide('sell')}
-                    className={`flex-1 py-2 px-3 rounded-lg border ${orderBookSide === 'sell' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-300'}`}
+                    className={`flex-1 py-2 px-3 rounded-lg border ${orderBookSide === 'sell' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-300 dark:border-secondary-600'}`}
                   >
                     Sell
                   </button>
                 </div>
               </div>
               <div>
-                <label htmlFor="obPrice" className="block text-sm font-medium text-gray-700">Price (ETH per unit)</label>
+                <label htmlFor="obPrice" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Price (ETH per unit)</label>
                 <input
                   id="obPrice"
                   type="number"
@@ -347,11 +347,11 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
                   value={orderBookPrice}
                   onChange={(e) => setOrderBookPrice(e.target.value)}
                   placeholder="0.0"
-                  className="w-full mt-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full mt-1 px-4 py-3 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
               <div>
-                <label htmlFor="obAmount" className="block text-sm font-medium text-gray-700">Amount (units)</label>
+                <label htmlFor="obAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount (units)</label>
                 <input
                   id="obAmount"
                   type="number"
@@ -360,19 +360,19 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
                   value={orderBookAmount}
                   onChange={(e) => setOrderBookAmount(e.target.value)}
                   placeholder="0"
-                  className="w-full mt-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full mt-1 px-4 py-3 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
               {orderBookSide === 'buy' && orderBookPrice && orderBookAmount && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   Total: {formatEther((ethers.parseEther(orderBookPrice) * BigInt(Math.floor(parseFloat(orderBookAmount) || 0))).toString())} ETH
                 </p>
               )}
-              <p className="text-xs text-gray-500">Your balance: {parseFloat(balance).toFixed(4)} ETH</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Your balance: {parseFloat(balance).toFixed(4)} ETH</p>
             </div>
           ) : (
             <div className="space-y-2">
-              <label htmlFor="bidAmount" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="bidAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Bid Amount (ETH)
               </label>
               <div className="relative">
@@ -385,15 +385,15 @@ export function BiddingInterface({ auction, onBidPlaced, isCreator }: BiddingInt
                   value={bidAmount}
                   onChange={(e) => setBidAmount(e.target.value)}
                   placeholder={minBidFormatted}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Minimum bid: {minBidFormatted} ETH
                 {auction.type === 'ENGLISH' && ' (must be higher than current highest bid)'}
                 {(auction.type === 'PLAYABLE' || auction.type === 'HOLD_TO_COMPETE') && ' (must be higher than current highest)'}
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Your balance: {parseFloat(balance).toFixed(4)} ETH
               </p>
             </div>

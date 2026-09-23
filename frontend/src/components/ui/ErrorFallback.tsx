@@ -45,7 +45,7 @@ export function ErrorFallback({
               className={
                 isSection
                   ? 'text-lg font-semibold text-red-800'
-                  : 'mb-2 text-2xl font-bold text-gray-900'
+                  : 'mb-2 text-2xl font-bold text-gray-900 dark:text-gray-100'
               }
             >
               {title}
@@ -54,7 +54,7 @@ export function ErrorFallback({
               className={
                 isSection
                   ? 'mt-1 text-sm text-red-700'
-                  : 'mb-6 text-gray-600'
+                  : 'mb-6 text-gray-600 dark:text-gray-400'
               }
             >
               {description}
@@ -65,7 +65,7 @@ export function ErrorFallback({
                 className={
                   isSection
                     ? 'mt-3 overflow-auto rounded bg-red-100 p-2 text-left text-xs text-red-900'
-                    : 'mb-6 overflow-auto rounded-lg bg-gray-100 p-3 text-left text-xs text-gray-700'
+                    : 'mb-6 overflow-auto rounded-lg bg-gray-100 dark:bg-secondary-800 p-3 text-left text-xs text-gray-700 dark:text-gray-300'
                 }
               >
                 {error.message}

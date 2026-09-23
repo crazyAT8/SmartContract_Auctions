@@ -39,7 +39,7 @@ export function AuctionFilters({ filters, onFiltersChange }: AuctionFiltersProps
   const hasActiveFilters = filters.type || filters.status || filters.search
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+    <div className="bg-white dark:bg-secondary-900 rounded-lg shadow-sm p-6 mb-6">
       {/* Search Bar */}
       <div className="mb-4">
         <div className="relative">
@@ -49,12 +49,12 @@ export function AuctionFilters({ filters, onFiltersChange }: AuctionFiltersProps
             placeholder="Search auctions..."
             value={filters.search}
             onChange={(e) => handleChange('search', e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
           {filters.search && (
             <button
               onClick={() => handleChange('search', '')}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-400"
             >
               <XMarkIcon className="h-5 w-5" />
             </button>
@@ -66,11 +66,11 @@ export function AuctionFilters({ filters, onFiltersChange }: AuctionFiltersProps
       <div className="flex flex-wrap gap-4 items-center">
         {/* Auction Type */}
         <div className="flex-1 min-w-[150px]">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Auction Type</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Auction Type</label>
           <select
             value={filters.type}
             onChange={(e) => handleChange('type', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
             <option value="">All Types</option>
             <option value="DUTCH">Dutch</option>
@@ -85,11 +85,11 @@ export function AuctionFilters({ filters, onFiltersChange }: AuctionFiltersProps
 
         {/* Status */}
         <div className="flex-1 min-w-[150px]">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
           <select
             value={filters.status}
             onChange={(e) => handleChange('status', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
             <option value="">All Statuses</option>
             <option value="ACTIVE">Active</option>
@@ -101,11 +101,11 @@ export function AuctionFilters({ filters, onFiltersChange }: AuctionFiltersProps
 
         {/* Sort By */}
         <div className="flex-1 min-w-[150px]">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sort By</label>
           <select
             value={filters.sortBy}
             onChange={(e) => handleChange('sortBy', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
             <option value="createdAt">Newest First</option>
             <option value="totalBids">Most Bids</option>
@@ -119,7 +119,7 @@ export function AuctionFilters({ filters, onFiltersChange }: AuctionFiltersProps
           <div className="flex items-end">
             <button
               onClick={clearFilters}
-              className="flex items-center px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-secondary-600 rounded-lg hover:bg-gray-50 dark:bg-secondary-950 transition-colors"
             >
               <XMarkIcon className="h-4 w-4 mr-1" />
               Clear Filters
@@ -130,8 +130,8 @@ export function AuctionFilters({ filters, onFiltersChange }: AuctionFiltersProps
 
       {/* Results Summary */}
       {hasActiveFilters && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <p className="text-sm text-gray-600">
+        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-secondary-700">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             {filters.search && <span className="inline-block mr-3">Search: &quot;{filters.search}&quot;</span>}
             {filters.type && <span className="inline-block mr-3">Type: {filters.type}</span>}
             {filters.status && <span className="inline-block">Status: {filters.status}</span>}

@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export function Footer() {
   return (
-    <footer className="bg-white border-t border-gray-200 mt-auto">
+    <footer className="bg-white border-t border-gray-200 mt-auto dark:bg-secondary-900 dark:border-secondary-700">
       <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="col-span-1 md:col-span-2">
@@ -10,25 +10,25 @@ export function Footer() {
               <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">A</span>
               </div>
-              <span className="text-xl font-bold text-gray-900">Auction dApp</span>
+              <span className="text-xl font-bold text-gray-900 dark:text-gray-100">Auction dApp</span>
             </div>
-            <p className="text-gray-600 max-w-md">
+            <p className="text-gray-600 max-w-md dark:text-gray-400">
               A decentralized auction platform supporting multiple auction types including Dutch, English, Sealed Bid, and more.
             </p>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">
+            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 dark:text-gray-100">
               Quick Links
             </h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/auctions" className="text-gray-600 hover:text-primary-600">
+                <Link href="/auctions" className="text-gray-600 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400">
                   Browse Auctions
                 </Link>
               </li>
               <li>
-                <Link href="/create" className="text-gray-600 hover:text-primary-600">
+                <Link href="/create" className="text-gray-600 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400">
                   Create Auction
                 </Link>
               </li>
@@ -36,8 +36,8 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-8 border-t border-gray-200">
-          <p className="text-gray-600 text-sm">
+        <div className="mt-8 pt-8 border-t border-gray-200 dark:border-secondary-700">
+          <p className="text-gray-600 text-sm dark:text-gray-400">
             © {new Date().getFullYear()} Auction dApp. All rights reserved.
           </p>
         </div>

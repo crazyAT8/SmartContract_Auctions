@@ -36,7 +36,7 @@ export function AuctionCard({ auction }: AuctionCardProps) {
   const timeRemaining = getTimeRemaining()
 
   return (
-    <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden group">
+    <div className="bg-white dark:bg-secondary-900 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden group">
       <div className="relative">
         <img
           src={auction.imageUrl || 'https://via.placeholder.com/400x300'}
@@ -54,18 +54,18 @@ export function AuctionCard({ auction }: AuctionCardProps) {
       </div>
 
       <div className="p-5">
-        <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 min-h-[3.5rem]">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2 line-clamp-2 min-h-[3.5rem]">
           {auction.title}
         </h3>
         
         {auction.description && (
-          <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+          <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">
             {auction.description}
           </p>
         )}
 
         <div className="space-y-2 mb-4">
-          <div className="flex items-center text-sm text-gray-600">
+          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
             <UserIcon className="h-4 w-4 mr-2 flex-shrink-0" />
             <span className="truncate">
               by {auction.creator.username || formatAddress(auction.creator.address)}
@@ -73,30 +73,30 @@ export function AuctionCard({ auction }: AuctionCardProps) {
           </div>
           
           {timeRemaining && (
-            <div className="flex items-center text-sm text-gray-600">
+            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
               <ClockIcon className="h-4 w-4 mr-2 flex-shrink-0" />
               <span>{timeRemaining} remaining</span>
             </div>
           )}
           
-          <div className="flex items-center text-sm text-gray-600">
+          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
             <EyeIcon className="h-4 w-4 mr-2 flex-shrink-0" />
             <span>{auction.totalBids} bids</span>
           </div>
         </div>
 
-        <div className="border-t border-gray-200 pt-4 mb-4">
+        <div className="border-t border-gray-200 dark:border-secondary-700 pt-4 mb-4">
           <div className="flex justify-between items-center">
             <div>
-              <div className="text-xs text-gray-500 mb-1">Current Price</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Current Price</div>
               <div className="text-2xl font-bold text-primary-600">
                 {formatEther(auction.currentPrice || '0')} ETH
               </div>
             </div>
             {auction.highestBid && (
               <div className="text-right">
-                <div className="text-xs text-gray-500 mb-1">Highest Bid</div>
-                <div className="text-lg font-semibold text-gray-900">
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Highest Bid</div>
+                <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   {formatEther(auction.highestBid)} ETH
                 </div>
               </div>

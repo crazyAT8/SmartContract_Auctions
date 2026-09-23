@@ -9,22 +9,22 @@ export function Hero() {
   const { isConnected } = useWeb3()
 
   return (
-    <div className="relative bg-gradient-to-br from-primary-50 to-primary-100 border-b border-primary-100">
+    <div className="relative bg-gradient-to-br from-primary-50 to-primary-100 border-b border-primary-100 dark:from-secondary-900 dark:to-secondary-950 dark:border-secondary-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-24">
         <div className="text-center">
           <div className="flex justify-center mb-8">
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary-100 text-primary-800 text-sm font-medium">
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary-100 text-primary-800 text-sm font-medium dark:bg-primary-900/40 dark:text-primary-200">
               <SparklesIcon className="h-4 w-4 mr-2" />
               Decentralized Auction Platform
             </div>
           </div>
 
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-gray-100 mb-6">
             Discover the Future of
             <span className="text-gradient block">Digital Auctions</span>
           </h1>
 
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-600 dark:text-gray-400 mb-8 max-w-3xl mx-auto">
             Experience 7 different auction mechanisms on the blockchain. From traditional English auctions to innovative Dutch and sealed bid systems.
           </p>
 
@@ -49,15 +49,15 @@ export function Hero() {
         <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="text-center">
             <div className="text-3xl font-bold text-primary-600 mb-2">7</div>
-            <div className="text-gray-600">Auction Types</div>
+            <div className="text-gray-600 dark:text-gray-400">Auction Types</div>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-primary-600 mb-2">100%</div>
-            <div className="text-gray-600">Decentralized</div>
+            <div className="text-gray-600 dark:text-gray-400">Decentralized</div>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-primary-600 mb-2">24/7</div>
-            <div className="text-gray-600">Always Active</div>
+            <div className="text-gray-600 dark:text-gray-400">Always Active</div>
           </div>
         </div>
       </div>

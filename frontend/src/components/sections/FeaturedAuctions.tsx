@@ -66,13 +66,13 @@ export function FeaturedAuctions() {
   }
 
   return (
-    <section className="py-24 bg-gray-50">
+    <section className="py-24 bg-gray-50 dark:bg-secondary-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             Featured Auctions
           </h2>
-          <p className="text-xl text-gray-600">
+          <p className="text-xl text-gray-600 dark:text-gray-400">
             Discover the most exciting auctions happening right now
           </p>
         </div>
@@ -85,7 +85,7 @@ export function FeaturedAuctions() {
         >
           {auctions.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-500">No active auctions yet.</p>
+              <p className="text-gray-500 dark:text-gray-400">No active auctions yet.</p>
               <Link href="/create" className="btn-primary mt-4 inline-block">
                 Create an auction
               </Link>
@@ -112,26 +112,26 @@ export function FeaturedAuctions() {
                     </div>
                   </div>
 
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2 line-clamp-1">
                     {auction.title}
                   </h3>
 
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">
                     {auction.description}
                   </p>
 
                   <div className="space-y-2 mb-4">
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                       <UserIcon className="h-4 w-4 mr-2" />
                       <span>by {auction.creator.username || formatAddress(auction.creator.address)}</span>
                     </div>
 
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                       <ClockIcon className="h-4 w-4 mr-2" />
                       <span>{getTimeRemaining(auction.endTime)} remaining</span>
                     </div>
 
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                       <EyeIcon className="h-4 w-4 mr-2" />
                       <span>{auction.totalBids} bids</span>
                     </div>
@@ -139,15 +139,15 @@ export function FeaturedAuctions() {
 
                   <div className="flex justify-between items-center mb-4">
                     <div>
-                      <div className="text-sm text-gray-500">Current Price</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Current Price</div>
                       <div className="text-xl font-bold text-primary-600">
                         {formatEther(auction.currentPrice || '0')} ETH
                       </div>
                     </div>
                     {auction.highestBid && (
                       <div className="text-right">
-                        <div className="text-sm text-gray-500">Highest Bid</div>
-                        <div className="text-lg font-semibold text-gray-900">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">Highest Bid</div>
+                        <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                           {formatEther(auction.highestBid)} ETH
                         </div>
                       </div>

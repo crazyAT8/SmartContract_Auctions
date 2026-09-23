@@ -102,8 +102,8 @@ export default function AuctionsPage() {
     <div className="py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">All Auctions</h1>
-          <p className="text-xl text-gray-600">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">All Auctions</h1>
+          <p className="text-xl text-gray-600 dark:text-gray-400">
             Discover and participate in decentralized auctions
           </p>
         </div>
@@ -139,19 +139,19 @@ export default function AuctionsPage() {
                     <button
                       onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
-                      className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                      className="px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:bg-secondary-950 transition-colors"
                     >
                       Previous
                     </button>
 
-                    <div className="px-4 py-2 text-gray-700">
+                    <div className="px-4 py-2 text-gray-700 dark:text-gray-300">
                       Page {currentPage} of {pagination.pages}
                     </div>
 
                     <button
                       onClick={() => setCurrentPage(p => Math.min(pagination.pages, p + 1))}
                       disabled={currentPage === pagination.pages}
-                      className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                      className="px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:bg-secondary-950 transition-colors"
                     >
                       Next
                     </button>
@@ -160,7 +160,7 @@ export default function AuctionsPage() {
               </>
             ) : (
               <div className="text-center py-12">
-                <p className="text-gray-500 text-lg">No auctions found</p>
+                <p className="text-gray-500 dark:text-gray-400 text-lg">No auctions found</p>
                 <p className="text-gray-400 mt-2">Try adjusting your filters</p>
               </div>
             )}

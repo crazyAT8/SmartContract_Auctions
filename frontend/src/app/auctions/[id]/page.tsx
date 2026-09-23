@@ -148,7 +148,7 @@ export default function AuctionDetailPage() {
       <div className="flex justify-center items-center min-h-[60vh] px-4">
         {notFound ? (
           <div className="text-center">
-            <p className="text-gray-500 text-lg mb-4">Auction not found</p>
+            <p className="text-gray-500 dark:text-gray-400 text-lg mb-4">Auction not found</p>
             <button
               onClick={() => router.push('/auctions')}
               className="btn-primary"
@@ -165,7 +165,7 @@ export default function AuctionDetailPage() {
             className="w-full max-w-md"
           >
             <div className="text-center">
-              <p className="text-gray-500 text-lg mb-4">Auction unavailable</p>
+              <p className="text-gray-500 dark:text-gray-400 text-lg mb-4">Auction unavailable</p>
               <button
                 onClick={() => router.push('/auctions')}
                 className="btn-primary"
@@ -198,7 +198,7 @@ export default function AuctionDetailPage() {
             {/* Left Column - Main Content */}
             <div className="lg:col-span-2 space-y-6">
               {/* Auction Image */}
-              <div className="bg-white rounded-lg shadow-sm overflow-hidden relative h-96">
+              <div className="bg-white dark:bg-secondary-900 rounded-lg shadow-sm overflow-hidden relative h-96">
                 <Image
                   src={auction.imageUrl || 'https://via.placeholder.com/800x600'}
                   alt={auction.title}
@@ -230,9 +230,9 @@ export default function AuctionDetailPage() {
             {/* Right Column - Bidding & Info */}
             <div className="space-y-6">
               {/* Auction Status Card */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="bg-white dark:bg-secondary-900 rounded-lg shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-bold text-gray-900">{auction.title}</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{auction.title}</h2>
                   <span className={`badge ${getAuctionStatusColor(auction.status)}`}>
                     {auction.status}
                   </span>
@@ -246,8 +246,8 @@ export default function AuctionDetailPage() {
 
                 {/* Key Stats */}
                 <div className="space-y-4 mb-6">
-                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                    <div className="flex items-center text-gray-600">
+                  <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-secondary-700">
+                    <div className="flex items-center text-gray-600 dark:text-gray-400">
                       <CurrencyDollarIcon className="h-5 w-5 mr-2" />
                       <span>Current Price</span>
                     </div>
@@ -257,45 +257,45 @@ export default function AuctionDetailPage() {
                   </div>
 
                   {auction.highestBid && (
-                    <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                      <div className="flex items-center text-gray-600">
+                    <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-secondary-700">
+                      <div className="flex items-center text-gray-600 dark:text-gray-400">
                         <EyeIcon className="h-5 w-5 mr-2" />
                         <span>Highest Bid</span>
                       </div>
-                      <div className="text-lg font-semibold text-gray-900">
+                      <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                         {formatEther(auction.highestBid)} ETH
                       </div>
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                    <div className="flex items-center text-gray-600">
+                  <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-secondary-700">
+                    <div className="flex items-center text-gray-600 dark:text-gray-400">
                       <EyeIcon className="h-5 w-5 mr-2" />
                       <span>Total Bids</span>
                     </div>
-                    <div className="text-lg font-semibold text-gray-900">
+                    <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                       {auction.totalBids}
                     </div>
                   </div>
 
                   {timeRemaining && (
-                    <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                      <div className="flex items-center text-gray-600">
+                    <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-secondary-700">
+                      <div className="flex items-center text-gray-600 dark:text-gray-400">
                         <ClockIcon className="h-5 w-5 mr-2" />
                         <span>Time Remaining</span>
                       </div>
-                      <div className="text-lg font-semibold text-gray-900">
+                      <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                         {timeRemaining}
                       </div>
                     </div>
                   )}
 
                   <div className="flex items-center justify-between py-3">
-                    <div className="flex items-center text-gray-600">
+                    <div className="flex items-center text-gray-600 dark:text-gray-400">
                       <UserIcon className="h-5 w-5 mr-2" />
                       <span>Creator</span>
                     </div>
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {auction.creator.username || formatAddress(auction.creator.address)}
                     </div>
                   </div>
@@ -332,8 +332,8 @@ export default function AuctionDetailPage() {
                 )}
 
                 {isEnded && (
-                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                    <p className="text-gray-600 text-sm mb-2">This auction has ended.</p>
+                  <div className="mt-6 p-4 bg-gray-50 dark:bg-secondary-950 rounded-lg">
+                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">This auction has ended.</p>
                     {auction.winner && (
                       <p className="text-sm">
                         <span className="font-medium">Winner:</span>{' '}
@@ -346,12 +346,12 @@ export default function AuctionDetailPage() {
 
               {/* Additional Info */}
               {auction.contractAddress && (
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Contract Info</h3>
+                <div className="bg-white dark:bg-secondary-900 rounded-lg shadow-sm p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Contract Info</h3>
                   <div className="space-y-2 text-sm">
                     <div>
-                      <span className="text-gray-600">Contract Address:</span>
-                      <div className="font-mono text-gray-900 break-all">
+                      <span className="text-gray-600 dark:text-gray-400">Contract Address:</span>
+                      <div className="font-mono text-gray-900 dark:text-gray-100 break-all">
                         {auction.contractAddress}
                       </div>
                     </div>

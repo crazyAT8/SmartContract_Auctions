@@ -70,13 +70,13 @@ const auctionTypes = [
 
 export function AuctionTypes() {
   return (
-    <section className="py-24 bg-white">
+    <section className="py-24 bg-white dark:bg-secondary-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             Choose Your Auction Type
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
             Each auction mechanism offers unique advantages and is designed for different use cases and market conditions.
           </p>
         </div>
@@ -90,11 +90,11 @@ export function AuctionTypes() {
                 className="card hover:shadow-lg transition-shadow duration-300"
               >
                 <div className="flex items-center mb-4">
-                  <div className="p-3 bg-primary-100 rounded-lg mr-4">
-                    <Icon className="h-6 w-6 text-primary-600" />
+                  <div className="p-3 bg-primary-100 rounded-lg mr-4 dark:bg-primary-900/40">
+                    <Icon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                       {auction.title}
                     </h3>
                     <span className={`badge ${getAuctionTypeColor(auction.type)}`}>
@@ -103,15 +103,15 @@ export function AuctionTypes() {
                   </div>
                 </div>
 
-                <p className="text-gray-600 mb-4">
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
                   {auction.description}
                 </p>
 
                 <div className="mb-4">
-                  <h4 className="text-sm font-medium text-gray-900 mb-2">Key Features:</h4>
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Key Features:</h4>
                   <ul className="space-y-1">
                     {auction.features.map((feature, index) => (
-                      <li key={index} className="text-sm text-gray-600 flex items-center">
+                      <li key={index} className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
                         <div className="w-1.5 h-1.5 bg-primary-600 rounded-full mr-2" />
                         {feature}
                       </li>
@@ -119,8 +119,8 @@ export function AuctionTypes() {
                   </ul>
                 </div>
 
-                <div className="pt-4 border-t border-gray-200">
-                  <p className="text-sm text-gray-500">
+                <div className="pt-4 border-t border-gray-200 dark:border-secondary-700">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     <span className="font-medium">Best for:</span> {auction.bestFor}
                   </p>
                 </div>

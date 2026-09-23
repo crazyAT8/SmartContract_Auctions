@@ -191,10 +191,10 @@ export function SealedBidReveal({ auctionId, contractAddress, onRevealed }: Seal
           void fetchState()
         }}
         loadingLabel="Loading sealed bid phase..."
-        className="bg-gray-50 border border-gray-200 rounded-lg"
+        className="bg-gray-50 dark:bg-secondary-950 border border-gray-200 dark:border-secondary-700 rounded-lg"
       >
-        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <p className="text-sm text-gray-500">Sealed bid phase unavailable</p>
+        <div className="p-4 bg-gray-50 dark:bg-secondary-950 border border-gray-200 dark:border-secondary-700 rounded-lg">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Sealed bid phase unavailable</p>
         </div>
       </AsyncState>
     )
@@ -226,7 +226,7 @@ export function SealedBidReveal({ auctionId, contractAddress, onRevealed }: Seal
         <>
           {stored ? (
             <div className="space-y-2">
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
                 Stored bid from this browser: <strong>{formatEther(stored.valueWei)} ETH</strong>
               </p>
               <button
@@ -240,11 +240,11 @@ export function SealedBidReveal({ auctionId, contractAddress, onRevealed }: Seal
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Enter the bid value and secret you used when placing your sealed bid (e.g. from another device or backup).
               </p>
               <div>
-                <label htmlFor="reveal-value" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="reveal-value" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Bid value (ETH)
                 </label>
                 <input
@@ -254,11 +254,11 @@ export function SealedBidReveal({ auctionId, contractAddress, onRevealed }: Seal
                   value={manualValue}
                   onChange={(e) => setManualValue(e.target.value)}
                   placeholder="0.5"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
               <div>
-                <label htmlFor="reveal-secret" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="reveal-secret" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Secret (32-byte hex, 0x + 64 chars)
                 </label>
                 <input
@@ -267,7 +267,7 @@ export function SealedBidReveal({ auctionId, contractAddress, onRevealed }: Seal
                   value={manualSecret}
                   onChange={(e) => setManualSecret(e.target.value)}
                   placeholder="0x..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
               <button

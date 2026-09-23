@@ -39,29 +39,29 @@ export function UserMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+        className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:bg-secondary-800 transition-colors"
       >
         <UserCircleIcon className="h-8 w-8 text-gray-400" />
         <div className="text-left">
-          <div className="text-sm font-medium text-gray-900">
+          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
             {formatAddress(account || '')}
           </div>
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-500 dark:text-gray-400">
             {parseFloat(balance).toFixed(4)} ETH
           </div>
         </div>
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-          <div className="px-4 py-2 border-b border-gray-100">
-            <div className="text-sm font-medium text-gray-900">Account</div>
-            <div className="text-xs text-gray-500">{account}</div>
+        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-secondary-900 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-secondary-700">
+          <div className="px-4 py-2 border-b border-gray-100 dark:border-secondary-800">
+            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Account</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">{account}</div>
           </div>
           
           <a
             href="/profile"
-            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-secondary-800"
           >
             <UserCircleIcon className="h-4 w-4 mr-3" />
             Profile
@@ -69,7 +69,7 @@ export function UserMenu() {
           
           <a
             href="/settings"
-            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-secondary-800"
           >
             <Cog6ToothIcon className="h-4 w-4 mr-3" />
             Settings
@@ -77,7 +77,7 @@ export function UserMenu() {
           
           <button
             onClick={handleDisconnect}
-            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-secondary-800"
           >
             <ArrowRightOnRectangleIcon className="h-4 w-4 mr-3" />
             Disconnect

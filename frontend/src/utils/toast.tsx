@@ -34,7 +34,7 @@ export function toastErrorWithRetry(
         <span className="flex-1 text-sm leading-snug">{message}</span>
         <button
           type="button"
-          className="shrink-0 rounded px-2 py-1 text-xs font-semibold bg-white/20 hover:bg-white/30 transition-colors"
+          className="shrink-0 rounded px-2 py-1 text-xs font-semibold bg-white dark:bg-secondary-900/20 hover:bg-white dark:bg-secondary-900/30 transition-colors"
           onClick={() => {
             toast.dismiss(t.id)
             onRetry()

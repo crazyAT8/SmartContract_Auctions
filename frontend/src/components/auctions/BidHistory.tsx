@@ -81,15 +81,15 @@ export function BidHistory({ auctionId }: BidHistoryProps) {
       case 'REJECTED':
         return 'bg-red-100 text-red-800'
       case 'WITHDRAWN':
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-100 dark:bg-secondary-800 text-gray-800 dark:text-gray-200'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-100 dark:bg-secondary-800 text-gray-800 dark:text-gray-200'
     }
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">Bid History</h2>
+    <div className="bg-white dark:bg-secondary-900 rounded-lg shadow-sm p-6">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Bid History</h2>
 
       <AsyncState
         loading={loading && bids.length === 0}
@@ -99,7 +99,7 @@ export function BidHistory({ auctionId }: BidHistoryProps) {
       >
         {bids.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-500">No bids yet. Be the first to bid!</p>
+            <p className="text-gray-500 dark:text-gray-400">No bids yet. Be the first to bid!</p>
           </div>
         ) : (
           <>
@@ -108,14 +108,14 @@ export function BidHistory({ auctionId }: BidHistoryProps) {
                 <div
                   key={bid.id}
                   className={`flex items-center justify-between p-4 rounded-lg border ${
-                    index === 0 ? 'bg-primary-50 border-primary-200' : 'bg-gray-50 border-gray-200'
+                    index === 0 ? 'bg-primary-50 border-primary-200' : 'bg-gray-50 dark:bg-secondary-950 border-gray-200 dark:border-secondary-700'
                   }`}
                 >
                   <div className="flex items-center space-x-4 flex-1">
                     <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold ${
                       index === 0
                         ? 'bg-primary-600 text-white'
-                        : 'bg-gray-300 text-gray-700'
+                        : 'bg-gray-300 text-gray-700 dark:text-gray-300'
                     }`}>
                       {index + 1}
                     </div>
@@ -123,14 +123,14 @@ export function BidHistory({ auctionId }: BidHistoryProps) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-1">
                         <UserIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                        <span className="font-medium text-gray-900 truncate">
+                        <span className="font-medium text-gray-900 dark:text-gray-100 truncate">
                           {bid.bidder.username || formatAddress(bid.bidder.address)}
                         </span>
                         <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(bid.status)}`}>
                           {bid.status}
                         </span>
                       </div>
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
+                      <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                         <div className="flex items-center">
                           <ClockIcon className="h-3 w-3 mr-1" />
                           {formatDate(bid.createdAt)}

@@ -338,8 +338,8 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
   // Type Selection Step
   if (step === 'type') {
     return (
-      <div className="bg-white rounded-lg shadow-sm p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Select Auction Type</h2>
+      <div className="bg-white dark:bg-secondary-900 rounded-lg shadow-sm p-8">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Select Auction Type</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {AUCTION_TYPES.map((type) => {
             const Icon = type.icon
@@ -347,15 +347,15 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
               <button
                 key={type.value}
                 onClick={() => handleTypeSelect(type.value)}
-                className="p-6 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all text-left group"
+                className="p-6 border-2 border-gray-200 dark:border-secondary-700 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all text-left group"
               >
                 <div className="flex items-center mb-3">
                   <div className="p-2 bg-primary-100 rounded-lg mr-3 group-hover:bg-primary-200">
                     <Icon className="h-6 w-6 text-primary-600" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">{type.label}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{type.label}</h3>
                 </div>
-                <p className="text-sm text-gray-600">{type.description}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{type.description}</p>
               </button>
             )
           })}
@@ -369,7 +369,7 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
     const selectedTypeInfo = AUCTION_TYPES.find(t => t.value === selectedType)
     
     return (
-      <div className="bg-white rounded-lg shadow-sm p-8">
+      <div className="bg-white dark:bg-secondary-900 rounded-lg shadow-sm p-8">
         <div className="mb-6">
           <button
             onClick={() => setStep('type')}
@@ -377,16 +377,16 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
           >
             ← Back to Type Selection
           </button>
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {selectedTypeInfo?.label} Details
           </h2>
-          <p className="text-gray-600 mt-2">{selectedTypeInfo?.description}</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">{selectedTypeInfo?.description}</p>
         </div>
 
         <div className="space-y-6">
           {/* Common Fields */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Title <span className="text-red-500">*</span>
             </label>
             <input
@@ -395,16 +395,16 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
               onChange={(e) => handleInputChange('title', e.target.value)}
               placeholder="Enter auction title"
               maxLength={200}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               {formData.title.length}/200 characters
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Description
             </label>
             <textarea
@@ -413,15 +413,15 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
               placeholder="Describe your auction item..."
               rows={4}
               maxLength={1000}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               {formData.description.length}/1000 characters
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Image URL
             </label>
             <div className="relative">
@@ -431,10 +431,10 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
                 value={formData.imageUrl}
                 onChange={(e) => handleInputChange('imageUrl', e.target.value)}
                 placeholder="https://example.com/image.jpg"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Optional: URL to an image of your auction item
             </p>
           </div>
@@ -450,7 +450,7 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Start Price (ETH) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -459,12 +459,12 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
                     value={formData.startPrice}
                     onChange={(e) => handleInputChange('startPrice', e.target.value)}
                     placeholder="10.0"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Reserve Price (ETH) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -473,12 +473,12 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
                     value={formData.reservePrice}
                     onChange={(e) => handleInputChange('reservePrice', e.target.value)}
                     placeholder="1.0"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Duration (hours) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -487,12 +487,12 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
                     value={formData.duration}
                     onChange={(e) => handleInputChange('duration', e.target.value)}
                     placeholder="24"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Price Drop Interval (minutes) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -501,7 +501,7 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
                     value={formData.priceDropInterval}
                     onChange={(e) => handleInputChange('priceDropInterval', e.target.value)}
                     placeholder="60"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                     required
                   />
                 </div>
@@ -519,7 +519,7 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Bidding Time (hours) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -528,12 +528,12 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
                     value={formData.biddingTime}
                     onChange={(e) => handleInputChange('biddingTime', e.target.value)}
                     placeholder="24"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Reserve Price (ETH) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -542,7 +542,7 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
                     value={formData.reservePriceEnglish}
                     onChange={(e) => handleInputChange('reservePriceEnglish', e.target.value)}
                     placeholder="1.0"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                     required
                   />
                 </div>
@@ -560,7 +560,7 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Bidding Time (hours) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -569,12 +569,12 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
                     value={formData.biddingTimeSealed}
                     onChange={(e) => handleInputChange('biddingTimeSealed', e.target.value)}
                     placeholder="48"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Reveal Time (hours) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -583,7 +583,7 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
                     value={formData.revealTime}
                     onChange={(e) => handleInputChange('revealTime', e.target.value)}
                     placeholder="24"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                     required
                   />
                 </div>
@@ -601,7 +601,7 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Token Address (ERC20) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -610,13 +610,13 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
                     onChange={(e) => handleInputChange('tokenAddress', e.target.value)}
                     placeholder="0x..."
                     pattern="^0x[a-fA-F0-9]{40}$"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 font-mono text-sm"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 font-mono text-sm"
                     required
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Minimum Hold Amount (tokens) <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -625,12 +625,12 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
                       value={formData.minHoldAmount}
                       onChange={(e) => handleInputChange('minHoldAmount', e.target.value)}
                       placeholder="100"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Bidding Time (hours) <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -639,7 +639,7 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
                       value={formData.biddingTimeHold}
                       onChange={(e) => handleInputChange('biddingTimeHold', e.target.value)}
                       placeholder="24"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                       required
                     />
                   </div>
@@ -658,7 +658,7 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Start Price (ETH) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -667,12 +667,12 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
                     value={formData.startPricePlayable}
                     onChange={(e) => handleInputChange('startPricePlayable', e.target.value)}
                     placeholder="10.0"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Reserve Price (ETH) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -681,12 +681,12 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
                     value={formData.reservePricePlayable}
                     onChange={(e) => handleInputChange('reservePricePlayable', e.target.value)}
                     placeholder="1.0"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Duration (hours) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -695,7 +695,7 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
                     value={formData.durationPlayable}
                     onChange={(e) => handleInputChange('durationPlayable', e.target.value)}
                     placeholder="24"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                     required
                   />
                 </div>
@@ -712,7 +712,7 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Bidding Time (hours) <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -721,7 +721,7 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
                   value={formData.biddingTimeRandom}
                   onChange={(e) => handleInputChange('biddingTimeRandom', e.target.value)}
                   placeholder="48"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                   required
                 />
               </div>
@@ -737,7 +737,7 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Bidding Time (hours) <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -746,7 +746,7 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
                   value={formData.biddingTimeOrderBook}
                   onChange={(e) => handleInputChange('biddingTimeOrderBook', e.target.value)}
                   placeholder="24"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                   required
                 />
               </div>
@@ -754,10 +754,10 @@ export function AuctionCreationForm({ onSuccess }: AuctionCreationFormProps) {
           )}
 
           {/* Submit Button */}
-          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-secondary-700">
             <button
               onClick={() => setStep('type')}
-              className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              className="px-6 py-3 border border-gray-300 dark:border-secondary-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-secondary-950 transition-colors"
             >
               Cancel
             </button>

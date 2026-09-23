@@ -6,6 +6,7 @@ import { useWeb3 } from '@/contexts/Web3Context'
 import { WalletConnectButton } from '@/components/wallet/WalletConnectButton'
 import { UserMenu } from '@/components/wallet/UserMenu'
 import { MobileMenu } from '@/components/layout/MobileMenu'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 
 export function Header() {
@@ -18,7 +19,7 @@ export function Header() {
   ]
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
+    <header className="bg-white shadow-sm border-b border-gray-200 dark:bg-secondary-900 dark:border-secondary-700">
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 justify-between items-center">
           {/* Logo */}
@@ -27,7 +28,7 @@ export function Header() {
               <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">A</span>
               </div>
-              <span className="text-xl font-bold text-gray-900">Auction dApp</span>
+              <span className="text-xl font-bold text-gray-900 dark:text-gray-100">Auction dApp</span>
             </Link>
           </div>
 
@@ -37,23 +38,25 @@ export function Header() {
               <Link
                 key={item.name}
                 href={item.href}
-                className="text-gray-700 hover:text-primary-600 px-3 py-2 text-sm font-medium transition-colors"
+                className="text-gray-700 hover:text-primary-600 px-3 py-2 text-sm font-medium transition-colors dark:text-gray-300 dark:hover:text-primary-400"
               >
                 {item.name}
               </Link>
             ))}
           </div>
 
-          {/* Desktop Wallet */}
-          <div className="hidden md:flex md:items-center md:space-x-4">
+          {/* Desktop actions */}
+          <div className="hidden md:flex md:items-center md:space-x-3">
+            <ThemeToggle />
             {isConnected ? <UserMenu /> : <WalletConnectButton />}
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center gap-2">
+            <ThemeToggle />
             <button
               type="button"
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-primary-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-primary-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 dark:text-gray-300 dark:hover:text-primary-400 dark:hover:bg-secondary-800"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               <span className="sr-only">Open main menu</span>

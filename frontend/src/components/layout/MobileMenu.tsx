@@ -18,19 +18,19 @@ export function MobileMenu({ open, setOpen, navigation }: MobileMenuProps) {
 
   return (
     <div className="md:hidden">
-      <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t border-gray-200">
+      <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t border-gray-200 dark:bg-secondary-900 dark:border-secondary-700">
         {navigation.map((item) => (
           <Link
             key={item.name}
             href={item.href}
-            className="text-gray-700 hover:text-primary-600 block px-3 py-2 text-base font-medium"
+            className="text-gray-700 hover:text-primary-600 block px-3 py-2 text-base font-medium dark:text-gray-300 dark:hover:text-primary-400"
             onClick={() => setOpen(false)}
           >
             {item.name}
           </Link>
         ))}
         
-        <div className="pt-4 border-t border-gray-200">
+        <div className="pt-4 border-t border-gray-200 dark:border-secondary-700">
           {isConnected ? <UserMenu /> : <WalletConnectButton />}
         </div>
       </div>

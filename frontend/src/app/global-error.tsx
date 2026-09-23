@@ -20,7 +20,7 @@ export default function GlobalError({
 
   return (
     <html lang="en">
-      <body className="bg-gray-50 text-gray-900 antialiased">
+      <body className="bg-gray-50 dark:bg-secondary-950 text-gray-900 dark:text-gray-100 antialiased">
         <ErrorFallback
           error={error}
           resetErrorBoundary={reset}

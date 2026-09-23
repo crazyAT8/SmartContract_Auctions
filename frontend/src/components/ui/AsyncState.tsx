@@ -28,7 +28,7 @@ export function AsyncState({
     return (
       <div className={`flex flex-col items-center justify-center py-12 gap-3 ${className}`}>
         <LoadingSpinner />
-        {loadingLabel && <p className="text-sm text-gray-500">{loadingLabel}</p>}
+        {loadingLabel && <p className="text-sm text-gray-500 dark:text-gray-400">{loadingLabel}</p>}
       </div>
     )
   }
